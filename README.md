@@ -2,6 +2,7 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/killercoda-cli.svg)](https://pypi.org/project/killercoda-cli)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/killercoda-cli.svg)](https://pypi.org/project/killercoda-cli)
+[![CI](https://github.com/piotr1215/killercoda-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/piotr1215/killercoda-cli/actions/workflows/ci.yml)
 
 ---
 
