@@ -51,7 +51,7 @@ path = ".venv-test"
 [tool.hatch.envs.docs]
 type = "virtual"
 path = ".venv-docs"
-dependencies = ["pdoc3"]  
+dependencies = ["pdoc"]  
 
 [tool.hatch.envs.docs.scripts]
 generate = "pdoc -m google killercoda_cli -o docs"
