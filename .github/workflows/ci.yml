@@ -62,7 +62,7 @@ jobs:
         run: pipx install hatch==1.7.0
 
       - name: Run Unit Tests
-        run: hatch run test:unit
+        run: hatch run test
 
 
   build:
@@ -139,7 +139,7 @@ jobs:
         run: pipx install hatch==1.7.0
 
       - name: Build Documentation
-        run: hatch run docs:pdoc -d google killercoda_cli -o docs
+        run: hatch run docs:pdoc killercoda_cli -o docs
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

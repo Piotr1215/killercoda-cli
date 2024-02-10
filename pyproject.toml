@@ -36,6 +36,7 @@ killercoda-cli = "killercoda_cli.cli:main"
 
 [tool.hatch.version]
 path = "killercoda_cli/__about__.py"
+validate-bump = false 
 
 [tool.hatch.envs.default]
 dependencies = [
@@ -51,6 +52,9 @@ path = ".venv-test"
 type = "virtual"
 path = ".venv-docs"
 dependencies = ["pdoc3"]  
+
+[tool.hatch.envs.docs.scripts]
+generate = "pdoc -m google killercoda_cli -o docs"
 
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
