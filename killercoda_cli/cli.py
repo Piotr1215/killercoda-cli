@@ -160,8 +160,7 @@ def display_help():
     """
     print(help_text)
 
-#  TODO:(piotr1215) add integration tests for the main function
-def main():# pragma: no cover 
+def main():
     if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
         display_help()
         sys.exit()
