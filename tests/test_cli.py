@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import unittest
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import patch, MagicMock
 from killercoda_cli import cli
 
@@ -35,6 +35,13 @@ class TestCLI(unittest.TestCase):
         expected_dict = cli.get_current_steps_dict(directory_items)
         steps_dict = cli.get_current_steps_dict(directory_items)
         assert steps_dict == expected_dict, "The steps dictionary did not match the expected output."
+
+    @mock.patch('os.path.isdir', return_value=True)
+    def test_get_current_steps_dict_ignores_invalid(self, mock_isdir):
+        directory_items = ['step1', 'stepnotanumber.md', 'step2']
+        expected = {1: 'step1', 2: 'step2'}
+        result = cli.get_current_steps_dict(directory_items)
+        self.assertEqual(result, expected)
 
     def test_get_user_input(self):
         steps_dict = {1: 'step1', 2: 'step2', 3: 'step3.md'}
