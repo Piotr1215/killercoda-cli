@@ -23,6 +23,8 @@ pip install killercoda-cli
 
 ## Usage
 
+Pdoc generated Documentation available at: https://piotr1215.github.io/killercoda-cli/killercoda_cli/cli.html
+
 ### Requirements:
 
 - The tool must be run in a directory containing step files or directories (e.g., step1.md, step2/).
