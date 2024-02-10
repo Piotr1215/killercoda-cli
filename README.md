@@ -7,13 +7,13 @@
 
 **Table of Contents**
 
-
-1. [Installation](#installation)
-2. [Usage](#usage)
-   * [Requirements:](#requirements:)
-   * [Functionality:](#functionality:)
-   * [Example:](#example:)
-3. [License](#license)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Requirements:](#requirements:)
+  - [Functionality:](#functionality:)
+  - [Example:](#example:)
+- [Disclaimer](#disclaimer)
+- [License](#license)
 
 ## Installation
 
@@ -104,6 +104,12 @@ After:
 > [!NOTE]
 >
 > The tool automatically handles the renaming of directories and files, ensuring a smooth workflow for scenario development and updates.
+
+## Disclaimer
+
+This is an my personal project to easier create and manage killercoda scenarios.
+Check out [killercoda](https://killercoda.com/) interactive scenarios to learn more about
+the service.
 
 ## License
 
