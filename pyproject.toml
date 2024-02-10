@@ -43,6 +43,10 @@ dependencies = [
   "pytest",
 ]
 
+[tool.hatch.envs.test]
+type = "virtual"
+path = ".venv-test"
+
 [tool.hatch.envs.docs]
 type = "virtual"
 path = ".venv-docs"
