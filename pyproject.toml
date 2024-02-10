@@ -48,6 +48,9 @@ dependencies = [
 type = "virtual"
 path = ".venv-test"
 
+[tool.hatch.envs.test.scripts]
+unit = "python -m unittest tests/*.py"
+
 [tool.hatch.envs.docs]
 type = "virtual"
 path = ".venv-docs"
