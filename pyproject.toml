@@ -42,6 +42,12 @@ dependencies = [
   "coverage[toml]>=6.5",
   "pytest",
 ]
+
+[tool.hatch.envs.docs]
+type = "virtual"
+path = ".venv-docs"
+dependencies = ["pdoc3"]  
+
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"

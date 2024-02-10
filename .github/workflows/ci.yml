@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - release-*
+  pull_request: {}
+  workflow_dispatch:
+    inputs:
+      version:
+        description: PyPI project version (e.g. v0.1.0)
+        required: false
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run
+# in-progress and latest queued. However, do NOT cancel in-progress runs as we
+# want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  # Common versions
+  PYTHON_VERSION: '3.11.5'
+
+  # The PyPi project version to push. The default is v0.0.0+gitdate-gitsha.
+  PYPI_VERSION: ${{ inputs.version }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Hatch
+        run: pipx install hatch==1.7.0
+
+  unit-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Hatch
+        run: pipx install hatch==1.7.0
+
+      - name: Run Unit Tests
+        run: hatch run test:unit
+
+
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Hatch
+        run: pipx install hatch==1.7.0
+
+      # If a version wasn't explicitly passed as a workflow_dispatch input we
+      # default to version v0.0.0+<git-commit-date>-<git-short-sha>, for example
+      # v0.0.0+20231101115142-1091066df799. This is a simple implementation of
+      # Go's pseudo-versions: https://go.dev/ref/mod#pseudo-versions.
+      - name: Set Default PyPI Project Version
+        if: env.PYPI_VERSION == ''
+        run: echo "PYPI_VERSION=v0.0.0+$(date -d@$(git show -s --format=%ct) +%Y%m%d%H%M%S)-$(git rev-parse --short=12 HEAD)" >> $GITHUB_ENV
+
+      - name: Set PyPI Project Version
+        run: hatch version ${{ env.PYPI_VERSION }}
+
+      - name: Build Sdist and Wheel
+        run: hatch build
+
+      - name: Upload Sdist and Wheel to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: "dist/*"
+          if-no-files-found: error
+          retention-days: 1
+
+
+  publish:
+    # Don't publish unless we were run with an explicit version.
+    if: ${{ inputs.version != '' }}
+    needs:
+      - build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download Sdist and Wheel from GitHub
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: "dist"
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.8.11
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+
+  docs:
+    # The simple docs tool we're using doesn't support versions, so our docs
+    # will only reflect what's in main.
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Hatch
+        run: pipx install hatch==1.7.0
+
+      - name: Build Documentation
+        run: hatch run docs:pdoc3 -d google killercoda_cli -o docs
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
