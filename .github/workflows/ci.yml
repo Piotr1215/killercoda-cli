@@ -66,6 +66,10 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
+        with:
+          flags: smart-tests
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
         env:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: Piotr1215/killercoda-cli
