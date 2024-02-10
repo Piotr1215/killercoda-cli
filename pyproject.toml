@@ -51,7 +51,7 @@ dependencies = ["coverage"]
 
 [tool.hatch.envs.test.scripts]
 unit = "coverage run --source=killercoda_cli -m unittest discover tests"
-coverage-report = "coverage report"
+coverage-report = "coverage xml"
 
 [tool.hatch.envs.docs]
 type = "virtual"
