@@ -19,6 +19,15 @@ class TestCLIIntegration(unittest.TestCase):
         with open(os.path.join(self.test_dir, 'index.json'), 'w') as f:
             json.dump({"details": {"steps": [{"title": "Step 1", "text": "step1/step1.md", "background": "step1/background.sh"}]}}, f)
 
+    @patch('sys.argv', ['killercoda-cli', '--help'])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_main_help_message(self, mock_stdout):
+        with self.assertRaises(SystemExit) as cm:
+            cli.main()
+        self.assertEqual(cm.exception.code, None)
+        self.assertIn("Usage: killercoda-cli [OPTIONS]", mock_stdout.getvalue())
+        self.assertIn("A CLI helper for writing KillerCoda scenarios", mock_stdout.getvalue())
+
     @patch('builtins.input', side_effect=["title for new step", "2"])
     @patch('sys.stdout', new_callable=StringIO)
     def test_cli_main_integration(self, mock_stdout, mock_input):
@@ -42,6 +51,45 @@ class TestCLIIntegration(unittest.TestCase):
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
+
+    @patch('builtins.input', side_effect=["New Step Title", "0", "2"])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_main_invalid_step_number(self, mock_stdout, mock_input):
+        # Change the current working directory to the test directory
+        os.chdir(self.test_dir)
+
+        # Call the main function directly
+        cli.main()
+
+        # Check if the CLI tool printed the correct error message for invalid step number
+        self.assertIn("Please enter a valid step number between 1 and 2.", mock_stdout.getvalue())
+
+    @patch('builtins.input', side_effect=["New Step Title", "not a number", "2"])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_main_non_numeric_step_number(self, mock_stdout, mock_input):
+        # Change the current working directory to the test directory
+        os.chdir(self.test_dir)
+
+        # Call the main function directly
+        cli.main()
+
+        # Check if the CLI tool printed the correct error message for non-numeric input
+        self.assertIn("That's not a valid number. Please try again.", mock_stdout.getvalue())
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_main_no_step_files(self, mock_stdout):
+        # Change the current working directory to an empty test directory
+        empty_test_dir = '/tmp/test_cli_no_steps'
+        os.makedirs(empty_test_dir, exist_ok=True)
+        os.chdir(empty_test_dir)
+
+        with self.assertRaises(SystemExit) as cm:
+            cli.main()
+        self.assertEqual(cm.exception.code, 1)
+        self.assertIn("No step files or directories found.", mock_stdout.getvalue())
+
+        # Clean up the empty test directory
+        os.rmdir(empty_test_dir)
 
 if __name__ == "__main__":
     unittest.main()
