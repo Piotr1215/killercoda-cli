@@ -260,12 +260,15 @@ def main():
         display_help()
         sys.exit()
     # Check for the presence of an 'index.json' file
-    if 'index.json' not in os.listdir('.'):
-        print("The 'index.json' file is missing. Please ensure it is present in the current directory.")
-        sys.exit(1)
     old_tree_structure = get_tree_structure()
     directory_items = os.listdir('.')
     steps_dict = get_current_steps_dict(directory_items)
+    if not steps_dict:
+        print("No step files or directories found. Please run this command in a directory containing step files or directories.")
+        sys.exit(1)
+    if 'index.json' not in os.listdir('.'):
+        print("The 'index.json' file is missing. Please ensure it is present in the current directory.")
+        sys.exit(1)
     if not steps_dict:
         print("No step files or directories found. Please run this command in a directory containing step files or directories.")
         sys.exit(1)
