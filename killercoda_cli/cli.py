@@ -6,11 +6,27 @@ import difflib
 import sys
 
 def get_tree_structure():
+    """
+    Retrieves the current directory structure using the 'tree' command.
+
+    Returns:
+        A string representation of the directory structure.
+    """
     # Get the current tree structure as a string
     result = subprocess.run(['tree'], stdout=subprocess.PIPE)
     return result.stdout.decode('utf-8')
 
 def generate_diff(old_tree, new_tree):
+    """
+    Generate a unified diff between two directory tree structures.
+
+    Args:
+        old_tree (str): The original directory tree structure.
+        new_tree (str): The new directory tree structure after changes.
+
+    Returns:
+        str: A string containing the unified diff.
+    """
     # Use difflib to print a diff of the two tree outputs
     diff = difflib.unified_diff(
         old_tree.splitlines(keepends=True),
@@ -22,6 +38,15 @@ def generate_diff(old_tree, new_tree):
 
 # 1. Traverse the current directory and build a dictionary mapping step numbers to paths
 def get_current_steps_dict(directory_items):
+    """
+    Build a dictionary mapping step numbers to their respective paths.
+
+    Args:
+        directory_items (list): A list of items (files and directories) in the current directory.
+
+    Returns:
+        dict: A dictionary where keys are step numbers and values are the corresponding step paths.
+    """
     steps_dict = {}
     for item in directory_items:
         if item.startswith('step') and (os.path.isdir(item) or item.endswith('.md')):
@@ -35,9 +60,21 @@ def get_current_steps_dict(directory_items):
 
 # 2. Take input from the user for the new step's name and the desired step number
 def get_user_input(steps_dict, step_title_input, step_number_input):
+    """
+    Prompt the user for the new step's title and the desired step number, then validate the input.
+
+    Args:
+        steps_dict (dict): A dictionary mapping existing step numbers to their paths.
+        step_title_input (str): The title for the new step provided by the user.
+        step_number_input (str): The step number where the new step should be inserted, provided by the user.
+
+    Returns:
+        tuple: A tuple containing the validated step title and step number.
+    """
     step_title = step_title_input
     highest_step_num = max(steps_dict.keys(), default=0)
     
+
     while True:
         step_number = int(step_number_input)
         if 1 <= step_number <= highest_step_num + 1:
@@ -49,20 +86,41 @@ def get_user_input(steps_dict, step_title_input, step_number_input):
 
 # 3. Determine the renaming and shifting required based on user input
 def plan_renaming(steps_dict, insert_step_num):
+    """
+    Create a plan for renaming step directories and files after inserting a new step.
+
+    Args:
+        steps_dict (dict): A dictionary mapping existing step numbers to their paths.
+        insert_step_num (int): The step number at which the new step will be inserted.
+
+    Returns:
+        list: A list of tuples representing the renaming operations required.
+    """
     # Sort the keys to ensure we rename in the correct order
     sorted_step_nums = sorted(steps_dict.keys())
     renaming_plan = []
     
+
     # Determine which steps need to be shifted
     for step_num in sorted_step_nums:
         if step_num >= insert_step_num:
             renaming_plan.append((steps_dict[step_num], f"step{step_num + 1}"))
+
     
     # Reverse the plan to avoid overwriting any steps
     renaming_plan.reverse()
     return renaming_plan
 
 def calculate_renaming_operations(renaming_plan):
+    """
+    Calculate the file operations required to execute the renaming plan.
+
+    Args:
+        renaming_plan (list): A list of tuples representing the renaming operations required.
+
+    Returns:
+        list: A list of file operations (as tuples) to be performed for renaming.
+    """
     # Execute the renaming plan
     file_operations = []
     for old_name, new_name in renaming_plan:
@@ -92,6 +150,16 @@ def calculate_renaming_operations(renaming_plan):
     return file_operations
 
 def calculate_new_step_file_operations(insert_step_num, step_title):
+    """
+    Calculate the file operations for adding a new step with the given title and step number.
+
+    Args:
+        insert_step_num (int): The step number where the new step will be inserted.
+        step_title (str): The title for the new step.
+
+    Returns:
+        list: A list of file operations (as tuples) to create the new step's files and directories.
+    """
     # Add the new step folder and files
     new_step_folder = f"step{insert_step_num}"
     new_step_md = f"{new_step_folder}/step{insert_step_num}.md"
@@ -115,6 +183,18 @@ def calculate_new_step_file_operations(insert_step_num, step_title):
     return file_operations
 
 def calculate_index_json_updates(steps_dict, insert_step_num, step_title, current_index_data):
+    """
+    Update the index.json structure after inserting a new step.
+
+    Args:
+        steps_dict (dict): A dictionary mapping existing step numbers to their paths.
+        insert_step_num (int): The step number where the new step will be inserted.
+        step_title (str): The title for the new step.
+        current_index_data (dict): The current data from index.json.
+
+    Returns:
+        dict: The updated index.json data reflecting the new step insertion.
+    """
     # Load the index.json file
     data = current_index_data
 
@@ -139,6 +219,11 @@ def calculate_index_json_updates(steps_dict, insert_step_num, step_title, curren
     return data
 
 def display_help():
+    """
+    Display the help text for the CLI tool.
+
+    This function prints the usage and help information for the tool.
+    """
     help_text = """
         Usage: killercoda-cli [OPTIONS]
 
@@ -161,9 +246,23 @@ def display_help():
     print(help_text)
 
 def main():
+    """
+    The main entry point for the CLI tool.
+
+    This function orchestrates the entire process of adding a new step to the scenario,
+    from taking user input to updating the file system and the index.json file.
+    It ensures that the 'index.json' file is present, gathers the current directory structure,
+    prompts the user for the new step's title and number, calculates the necessary file operations,
+    and applies those changes to the file system and the index.json file.
+    Finally, it outputs the changes to the directory structure for the user to review.
+    """
     if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
         display_help()
         sys.exit()
+    # Check for the presence of an 'index.json' file
+    if 'index.json' not in os.listdir('.'):
+        print("The 'index.json' file is missing. Please ensure it is present in the current directory.")
+        sys.exit(1)
     old_tree_structure = get_tree_structure()
     directory_items = os.listdir('.')
     steps_dict = get_current_steps_dict(directory_items)
