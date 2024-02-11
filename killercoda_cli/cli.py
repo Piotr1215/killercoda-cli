@@ -5,6 +5,7 @@ import subprocess
 import difflib
 import sys
 
+#  TODO:(piotr1215) fallback if tree is not installed
 def get_tree_structure():
     """
     Retrieves the current directory structure using the 'tree' command.
@@ -36,7 +37,6 @@ def generate_diff(old_tree, new_tree):
     )
     return ''.join(diff)
 
-# 1. Traverse the current directory and build a dictionary mapping step numbers to paths
 def get_current_steps_dict(directory_items):
     """
     Build a dictionary mapping step numbers to their respective paths.
@@ -58,7 +58,6 @@ def get_current_steps_dict(directory_items):
                 pass  # This handles cases where the step name is not a number
     return steps_dict
 
-# 2. Take input from the user for the new step's name and the desired step number
 def get_user_input(steps_dict, step_title_input, step_number_input):
     """
     Prompt the user for the new step's title and the desired step number, then validate the input.
@@ -84,7 +83,6 @@ def get_user_input(steps_dict, step_title_input, step_number_input):
 
     return step_title, step_number
 
-# 3. Determine the renaming and shifting required based on user input
 def plan_renaming(steps_dict, insert_step_num):
     """
     Create a plan for renaming step directories and files after inserting a new step.
@@ -111,6 +109,7 @@ def plan_renaming(steps_dict, insert_step_num):
     renaming_plan.reverse()
     return renaming_plan
 
+#  TODO:(piotr1215) replace os calls with data structure
 def calculate_renaming_operations(renaming_plan):
     """
     Calculate the file operations required to execute the renaming plan.
@@ -247,8 +246,6 @@ def display_help():
 
 def main():
     """
-    The main entry point for the CLI tool.
-
     This function orchestrates the entire process of adding a new step to the scenario,
     from taking user input to updating the file system and the index.json file.
     It ensures that the 'index.json' file is present, gathers the current directory structure,
