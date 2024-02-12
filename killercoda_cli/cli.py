@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import os
+import difflib
 import json
 import subprocess
-import difflib
 import sys
+
 
 #  TODO:(piotr1215) fallback if tree is not installed
 def get_tree_structure():
@@ -14,8 +15,9 @@ def get_tree_structure():
         A string representation of the directory structure.
     """
     # Get the current tree structure as a string
-    result = subprocess.run(['tree'], stdout=subprocess.PIPE)
-    return result.stdout.decode('utf-8')
+    result = subprocess.run(["tree"], stdout=subprocess.PIPE)
+    return result.stdout.decode("utf-8")
+
 
 def generate_diff(old_tree, new_tree):
     """
@@ -32,10 +34,11 @@ def generate_diff(old_tree, new_tree):
     diff = difflib.unified_diff(
         old_tree.splitlines(keepends=True),
         new_tree.splitlines(keepends=True),
-        fromfile='Before changes',
-        tofile='After changes',
+        fromfile="Before changes",
+        tofile="After changes",
     )
-    return ''.join(diff)
+    return "".join(diff)
+
 
 def get_current_steps_dict(directory_items):
     """
@@ -49,14 +52,15 @@ def get_current_steps_dict(directory_items):
     """
     steps_dict = {}
     for item in directory_items:
-        if item.startswith('step') and (os.path.isdir(item) or item.endswith('.md')):
+        if item.startswith("step") and (os.path.isdir(item) or item.endswith(".md")):
             # Extract the step number from the name
             try:
-                step_num = int(item.replace('step', '').replace('.md', ''))
+                step_num = int(item.replace("step", "").replace(".md", ""))
                 steps_dict[step_num] = item
             except ValueError:
                 pass  # This handles cases where the step name is not a number
     return steps_dict
+
 
 def get_user_input(steps_dict, step_title_input, step_number_input):
     """
@@ -72,16 +76,18 @@ def get_user_input(steps_dict, step_title_input, step_number_input):
     """
     step_title = step_title_input
     highest_step_num = max(steps_dict.keys(), default=0)
-    
 
     while True:
         step_number = int(step_number_input)
         if 1 <= step_number <= highest_step_num + 1:
             break
         else:
-            raise ValueError(f"Invalid step number: {step_number_input}. Please enter a valid step number between 1 and {highest_step_num+1}.")
+            raise ValueError(
+                f"Invalid step number: {step_number_input}. Please enter a valid step number between 1 and {highest_step_num+1}."
+            )
 
     return step_title, step_number
+
 
 def plan_renaming(steps_dict, insert_step_num):
     """
@@ -97,17 +103,16 @@ def plan_renaming(steps_dict, insert_step_num):
     # Sort the keys to ensure we rename in the correct order
     sorted_step_nums = sorted(steps_dict.keys())
     renaming_plan = []
-    
 
     # Determine which steps need to be shifted
     for step_num in sorted_step_nums:
         if step_num >= insert_step_num:
             renaming_plan.append((steps_dict[step_num], f"step{step_num + 1}"))
 
-    
     # Reverse the plan to avoid overwriting any steps
     renaming_plan.reverse()
     return renaming_plan
+
 
 #  TODO:(piotr1215) replace os calls with data structure
 def calculate_renaming_operations(renaming_plan):
@@ -124,29 +129,30 @@ def calculate_renaming_operations(renaming_plan):
     file_operations = []
     for old_name, new_name in renaming_plan:
         # Make the new directory if it doesn't exist
-        file_operations.append(('makedirs', new_name))
+        file_operations.append(("makedirs", new_name))
         # If it's a directory, we need to check for background.sh and foreground.sh
         if os.path.isdir(old_name):
             # Check and move background.sh if it exists
             old_background = f"{old_name}/background.sh"
             new_background = f"{new_name}/background.sh"
             if os.path.isfile(old_background):
-                file_operations.append(('rename', old_background, new_background))
+                file_operations.append(("rename", old_background, new_background))
             # Check and move foreground.sh if it exists
             old_foreground = f"{old_name}/foreground.sh"
             new_foreground = f"{new_name}/foreground.sh"
             if os.path.isfile(old_foreground):
-                file_operations.append(('rename', old_foreground, new_foreground))
+                file_operations.append(("rename", old_foreground, new_foreground))
             # Rename the step markdown file
             old_step_md = f"{old_name}/step{old_name.replace('step', '')}.md"
             new_step_md = f"{new_name}/step{new_name.replace('step', '')}.md"
             if os.path.isfile(old_step_md):
-                file_operations.append(('rename', old_step_md, new_step_md))
+                file_operations.append(("rename", old_step_md, new_step_md))
         else:
             # If it's just a markdown file without a directory
             new_step_md = f"{new_name}.md"
-            file_operations.append(('rename', old_name, new_step_md))
+            file_operations.append(("rename", old_name, new_step_md))
     return file_operations
+
 
 def calculate_new_step_file_operations(insert_step_num, step_title):
     """
@@ -165,23 +171,26 @@ def calculate_new_step_file_operations(insert_step_num, step_title):
     new_step_background = f"{new_step_folder}/background.sh"
     new_step_foreground = f"{new_step_folder}/foreground.sh"
 
-    file_operations = [('makedirs', new_step_folder)]
-    
+    file_operations = [("makedirs", new_step_folder)]
+
     # Write the step markdown file
-    file_operations.append(('write_file', new_step_md, f"# {step_title}\n"))
-    
+    file_operations.append(("write_file", new_step_md, f"# {step_title}\n"))
+
     # Write a simple echo command to the background and foreground scripts
-    script_content = f"#!/bin/sh\necho \"{step_title} script\"\n"
-    
-    file_operations.append(('write_file', new_step_background, script_content))
-    file_operations.append(('write_file', new_step_foreground, script_content))
-    
-    file_operations.append(('chmod', new_step_background, 0o755))
-    file_operations.append(('chmod', new_step_foreground, 0o755))
+    script_content = f'#!/bin/sh\necho "{step_title} script"\n'
+
+    file_operations.append(("write_file", new_step_background, script_content))
+    file_operations.append(("write_file", new_step_foreground, script_content))
+
+    file_operations.append(("chmod", new_step_background, 0o755))
+    file_operations.append(("chmod", new_step_foreground, 0o755))
 
     return file_operations
 
-def calculate_index_json_updates(steps_dict, insert_step_num, step_title, current_index_data):
+
+def calculate_index_json_updates(
+    steps_dict, insert_step_num, step_title, current_index_data
+):
     """
     Update the index.json structure after inserting a new step.
 
@@ -201,21 +210,22 @@ def calculate_index_json_updates(steps_dict, insert_step_num, step_title, curren
     new_step_data = {
         "title": step_title,
         "text": f"step{insert_step_num}/step{insert_step_num}.md",
-        "background": f"step{insert_step_num}/background.sh"
+        "background": f"step{insert_step_num}/background.sh",
     }
 
     # Insert the new step data into the steps list
-    data['details']['steps'].insert(insert_step_num - 1, new_step_data)
+    data["details"]["steps"].insert(insert_step_num - 1, new_step_data)
 
     # Update the step numbers in the JSON structure
-    for i in range(insert_step_num, len(data['details']['steps'])):
-        step = data['details']['steps'][i]
+    for i in range(insert_step_num, len(data["details"]["steps"])):
+        step = data["details"]["steps"][i]
         step_number = i + 1  # Convert to 1-based index
         step["text"] = f"step{step_number}/step{step_number}.md"
         step["background"] = f"step{step_number}/background.sh"
 
     # Write the updated data back to index.json
     return data
+
 
 def display_help():
     """
@@ -244,6 +254,7 @@ def display_help():
     """
     print(help_text)
 
+
 def main():
     """
     This function orchestrates the entire process of adding a new step to the scenario,
@@ -253,74 +264,91 @@ def main():
     and applies those changes to the file system and the index.json file.
     Finally, it outputs the changes to the directory structure for the user to review.
     """
-    if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
+    if len(sys.argv) > 1 and sys.argv[1] in ["-h", "--help"]:
         display_help()
         sys.exit()
     # Check for the presence of an 'index.json' file
     old_tree_structure = get_tree_structure()
-    directory_items = os.listdir('.')
+    directory_items = os.listdir(".")
     steps_dict = get_current_steps_dict(directory_items)
     if not steps_dict:
-        print("No step files or directories found. Please run this command in a directory containing step files or directories.")
+        print(
+            "No step files or directories found. Please run this command in a directory containing step files or directories."
+        )
         sys.exit(1)
-    if 'index.json' not in os.listdir('.'):
-        print("The 'index.json' file is missing. Please ensure it is present in the current directory.")
+    if "index.json" not in os.listdir("."):
+        print(
+            "The 'index.json' file is missing. Please ensure it is present in the current directory."
+        )
         sys.exit(1)
     if not steps_dict:
-        print("No step files or directories found. Please run this command in a directory containing step files or directories.")
+        print(
+            "No step files or directories found. Please run this command in a directory containing step files or directories."
+        )
         sys.exit(1)
     step_title_input = input("Enter the title for the new step: ")
     highest_step_num = max(steps_dict.keys(), default=0)
     while True:
         try:
-            step_number_input = input(f"Enter the step number to insert the new step at (1-{highest_step_num+1}): ")
+            step_number_input = input(
+                f"Enter the step number to insert the new step at (1-{highest_step_num+1}): "
+            )
             insert_step_num = int(step_number_input)
             if 1 <= insert_step_num <= highest_step_num + 1:
                 break
             else:
-                print(f"Please enter a valid step number between 1 and {highest_step_num+1}.")
+                print(
+                    f"Please enter a valid step number between 1 and {highest_step_num+1}."
+                )
         except ValueError:
             print("That's not a valid number. Please try again.")
-    step_title, insert_step_num = get_user_input(steps_dict, step_title_input, step_number_input)
+    step_title, insert_step_num = get_user_input(
+        steps_dict, step_title_input, step_number_input
+    )
     renaming_plan = plan_renaming(steps_dict, insert_step_num)
 
     # Calculate the file operations for the renaming plan
     file_operations = calculate_renaming_operations(renaming_plan)
     # Execute the file operations
     for operation in file_operations:
-        if operation[0] == 'makedirs':
+        if operation[0] == "makedirs":
             os.makedirs(operation[1], exist_ok=True)
-        elif operation[0] == 'rename':
+        elif operation[0] == "rename":
             os.rename(operation[1], operation[2])
 
     # Calculate the file operations for the new step
-    new_step_operations = calculate_new_step_file_operations(insert_step_num, step_title)
+    new_step_operations = calculate_new_step_file_operations(
+        insert_step_num, step_title
+    )
     # Execute the file operations for the new step
     for operation in new_step_operations:
-        if operation[0] == 'makedirs':
+        if operation[0] == "makedirs":
             os.makedirs(operation[1], exist_ok=True)
-        elif operation[0] == 'write_file':
-            with open(operation[1], 'w') as file:
+        elif operation[0] == "write_file":
+            with open(operation[1], "w") as file:
                 file.write(operation[2])
-        elif operation[0] == 'chmod':
+        elif operation[0] == "chmod":
             os.chmod(operation[1], operation[2])
 
     # Read the current index.json data
-    index_file_path = 'index.json'
-    with open(index_file_path, 'r') as index_file:
+    index_file_path = "index.json"
+    with open(index_file_path, "r") as index_file:
         current_index_data = json.load(index_file)
 
     # Calculate the updates to the index.json data
-    updated_index_data = calculate_index_json_updates(steps_dict, insert_step_num, step_title, current_index_data)
+    updated_index_data = calculate_index_json_updates(
+        steps_dict, insert_step_num, step_title, current_index_data
+    )
 
     # Write the updated index.json data back to the file
-    with open(index_file_path, 'w') as index_file:
+    with open(index_file_path, "w") as index_file:
         json.dump(updated_index_data, index_file, ensure_ascii=False, indent=4)
     new_tree_structure = get_tree_structure()
     # Print out the new file structure for confirmation
     tree_diff = generate_diff(old_tree_structure, new_tree_structure)
     print("\nFile structure changes:")
     print(tree_diff, end="")
+
 
 if __name__ == "__main__":
     main()
