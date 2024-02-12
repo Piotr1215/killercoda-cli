@@ -4,6 +4,19 @@ import difflib
 import json
 import subprocess
 import sys
+from typing import Union, List, Tuple, Literal
+
+# Define a type hint for the different types of file operations that can be performed.
+# This Union type allows for specifying the operation (as a string literal indicating the type of action),
+# and the required arguments for each operation type:
+# - 'makedirs': Create a new directory; requires the path of the directory.
+# - 'write_file': Write content to a file; requires the file path and the content to write.
+# - 'chmod': Change the file mode; requires the file path and the new mode (as an integer).
+FileOperation = Union[
+    Tuple[Literal["makedirs"], str],
+    Tuple[Literal["write_file"], str, str],
+    Tuple[Literal["chmod"], str, int],
+]
 
 
 #  TODO:(piotr1215) fallback if tree is not installed
@@ -154,16 +167,22 @@ def calculate_renaming_operations(renaming_plan):
     return file_operations
 
 
-def calculate_new_step_file_operations(insert_step_num, step_title):
+def calculate_new_step_file_operations(
+    insert_step_num: int, step_title: str
+) -> List[FileOperation]:
     """
-    Calculate the file operations for adding a new step with the given title and step number.
+    Calculate the file operations needed to add a new step to the scenario.
+
+    This function builds a list of file operations (as tuples) to create the necessary files
+    and directories for a new step in a structured and automated manner.
 
     Args:
         insert_step_num (int): The step number where the new step will be inserted.
         step_title (str): The title for the new step.
 
     Returns:
-        list: A list of file operations (as tuples) to create the new step's files and directories.
+        List[FileOperation]: A list of file operations that, when executed, will set up
+                             the new step's directory, markdown file, and script files.
     """
     # Add the new step folder and files
     new_step_folder = f"step{insert_step_num}"
@@ -171,7 +190,7 @@ def calculate_new_step_file_operations(insert_step_num, step_title):
     new_step_background = f"{new_step_folder}/background.sh"
     new_step_foreground = f"{new_step_folder}/foreground.sh"
 
-    file_operations = [("makedirs", new_step_folder)]
+    file_operations: List[FileOperation] = [("makedirs", new_step_folder)]
 
     # Write the step markdown file
     file_operations.append(("write_file", new_step_md, f"# {step_title}\n"))
