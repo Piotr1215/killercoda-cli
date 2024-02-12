@@ -1,22 +1,46 @@
 #!/usr/bin/env python3
-import os
 import difflib
 import json
+import os
 import subprocess
 import sys
-from typing import Union, List, Tuple, Literal
+from typing import List, Optional
 
-# Define a type hint for the different types of file operations that can be performed.
-# This Union type allows for specifying the operation (as a string literal indicating the type of action),
-# and the required arguments for each operation type:
-# - 'makedirs': Create a new directory; requires the path of the directory.
-# - 'write_file': Write content to a file; requires the file path and the content to write.
-# - 'chmod': Change the file mode; requires the file path and the new mode (as an integer).
-FileOperation = Union[
-    Tuple[Literal["makedirs"], str],
-    Tuple[Literal["write_file"], str, str],
-    Tuple[Literal["chmod"], str, int],
-]
+
+class FileOperation:
+    """
+    # Define a type hint for the different types of file operations that can be performed.
+    # This Union type allows for specifying the operation (as a string literal indicating the type of action),
+    # and the required arguments for each operation type:
+    # - 'makedirs': Create a new directory; requires the path of the directory.
+    # - 'write_file': Write content to a file; requires the file path and the content to write.
+    # - 'chmod': Change the file mode; requires the file path and the new mode (as an integer).
+
+    """
+
+    def __init__(
+        self,
+        operation: str,
+        path: str,
+        content: Optional[str] = None,
+        mode: Optional[int] = None,
+    ):
+        self.operation = operation
+        self.path = path
+        self.content = content
+        self.mode = mode
+
+    def __eq__(self, other):
+        if not isinstance(other, FileOperation):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return (
+            self.operation == other.operation
+            and self.path == other.path
+            and self.content == other.content
+            and self.mode == other.mode
+        )
 
 
 #  TODO:(piotr1215) fallback if tree is not installed
@@ -133,37 +157,56 @@ def calculate_renaming_operations(renaming_plan):
     Calculate the file operations required to execute the renaming plan.
 
     Args:
-        renaming_plan (list): A list of tuples representing the renaming operations required.
+        renaming_plan (list): A list representing the renaming operations required, where each item
+                              is a tuple of the form (old_name, new_name).
 
     Returns:
-        list: A list of file operations (as tuples) to be performed for renaming.
+        list: A list of FileOperation objects to be performed for renaming.
     """
-    # Execute the renaming plan
     file_operations = []
     for old_name, new_name in renaming_plan:
-        # Make the new directory if it doesn't exist
-        file_operations.append(("makedirs", new_name))
-        # If it's a directory, we need to check for background.sh and foreground.sh
+        # Create the new directory if it doesn't exist
+        file_operations.append(FileOperation("makedirs", new_name))
+
+        # If it's a directory, we need to check for and move necessary files
         if os.path.isdir(old_name):
+            # Paths for background and foreground scripts
+            old_background = os.path.join(old_name, "background.sh")
+            new_background = os.path.join(new_name, "background.sh")
+            old_foreground = os.path.join(old_name, "foreground.sh")
+            new_foreground = os.path.join(new_name, "foreground.sh")
+
             # Check and move background.sh if it exists
-            old_background = f"{old_name}/background.sh"
-            new_background = f"{new_name}/background.sh"
             if os.path.isfile(old_background):
-                file_operations.append(("rename", old_background, new_background))
+                file_operations.append(
+                    FileOperation("rename", old_background, content=new_background)
+                )
+
             # Check and move foreground.sh if it exists
-            old_foreground = f"{old_name}/foreground.sh"
-            new_foreground = f"{new_name}/foreground.sh"
             if os.path.isfile(old_foreground):
-                file_operations.append(("rename", old_foreground, new_foreground))
+                file_operations.append(
+                    FileOperation("rename", old_foreground, content=new_foreground)
+                )
+
             # Rename the step markdown file
-            old_step_md = f"{old_name}/step{old_name.replace('step', '')}.md"
-            new_step_md = f"{new_name}/step{new_name.replace('step', '')}.md"
+            old_step_md = os.path.join(
+                old_name, f"step{old_name.replace('step', '')}.md"
+            )
+            new_step_md = os.path.join(
+                new_name, f"step{new_name.replace('step', '')}.md"
+            )
             if os.path.isfile(old_step_md):
-                file_operations.append(("rename", old_step_md, new_step_md))
+                file_operations.append(
+                    FileOperation("rename", old_step_md, content=new_step_md)
+                )
+
         else:
-            # If it's just a markdown file without a directory
+            # If it's just a markdown file without a directory, prepare to rename it
             new_step_md = f"{new_name}.md"
-            file_operations.append(("rename", old_name, new_step_md))
+            file_operations.append(
+                FileOperation("rename", old_name, content=new_step_md)
+            )
+
     return file_operations
 
 
@@ -184,25 +227,27 @@ def calculate_new_step_file_operations(
         List[FileOperation]: A list of file operations that, when executed, will set up
                              the new step's directory, markdown file, and script files.
     """
-    # Add the new step folder and files
     new_step_folder = f"step{insert_step_num}"
     new_step_md = f"{new_step_folder}/step{insert_step_num}.md"
     new_step_background = f"{new_step_folder}/background.sh"
     new_step_foreground = f"{new_step_folder}/foreground.sh"
 
-    file_operations: List[FileOperation] = [("makedirs", new_step_folder)]
-
-    # Write the step markdown file
-    file_operations.append(("write_file", new_step_md, f"# {step_title}\n"))
-
-    # Write a simple echo command to the background and foreground scripts
-    script_content = f'#!/bin/sh\necho "{step_title} script"\n'
-
-    file_operations.append(("write_file", new_step_background, script_content))
-    file_operations.append(("write_file", new_step_foreground, script_content))
-
-    file_operations.append(("chmod", new_step_background, 0o755))
-    file_operations.append(("chmod", new_step_foreground, 0o755))
+    file_operations = [
+        FileOperation("makedirs", new_step_folder),
+        FileOperation("write_file", new_step_md, content=f"# {step_title}\n"),
+        FileOperation(
+            "write_file",
+            new_step_background,
+            content=f'#!/bin/sh\necho "{step_title} script"\n',
+        ),
+        FileOperation(
+            "write_file",
+            new_step_foreground,
+            content=f'#!/bin/sh\necho "{step_title} script"\n',
+        ),
+        FileOperation("chmod", new_step_background, mode=0o755),
+        FileOperation("chmod", new_step_foreground, mode=0o755),
+    ]
 
     return file_operations
 
@@ -272,6 +317,22 @@ def display_help():
     print(help_text)
 
 
+def execute_file_operations(file_operations):
+    print("Debug file operations before execution:")  # Debugging line
+    for op in file_operations:
+        print(op)  # Debugging line
+    for operation in file_operations:
+        if operation.operation == "makedirs":
+            os.makedirs(operation.path, exist_ok=True)
+        elif operation.operation == "write_file":
+            with open(operation.path, "w") as file:
+                file.write(operation.content)
+        elif operation.operation == "chmod":
+            os.chmod(operation.path, operation.mode)
+        elif operation.operation == "rename":
+            os.rename(operation.path, operation.content)
+
+
 def main():
     """
     This function orchestrates the entire process of adding a new step to the scenario,
@@ -281,90 +342,46 @@ def main():
     and applies those changes to the file system and the index.json file.
     Finally, it outputs the changes to the directory structure for the user to review.
     """
-    if len(sys.argv) > 1 and sys.argv[1] in ["-h", "--help"]:
-        display_help()
-        sys.exit()
-    # Check for the presence of an 'index.json' file
-    old_tree_structure = get_tree_structure()
-    directory_items = os.listdir(".")
-    steps_dict = get_current_steps_dict(directory_items)
-    if not steps_dict:
-        print(
-            "No step files or directories found. Please run this command in a directory containing step files or directories."
-        )
-        sys.exit(1)
-    if "index.json" not in os.listdir("."):
-        print(
-            "The 'index.json' file is missing. Please ensure it is present in the current directory."
-        )
-        sys.exit(1)
-    if not steps_dict:
-        print(
-            "No step files or directories found. Please run this command in a directory containing step files or directories."
-        )
-        sys.exit(1)
-    step_title_input = input("Enter the title for the new step: ")
-    highest_step_num = max(steps_dict.keys(), default=0)
-    while True:
-        try:
-            step_number_input = input(
-                f"Enter the step number to insert the new step at (1-{highest_step_num+1}): "
+    try:
+        if len(sys.argv) > 1 and sys.argv[1] in ["-h", "--help"]:
+            display_help()
+            return
+        old_tree_structure = get_tree_structure()
+        directory_items = os.listdir(".")
+        steps_dict = get_current_steps_dict(directory_items)
+        if "index.json" not in directory_items:
+            print(
+                "The 'index.json' file is missing. Please ensure it is present in the current directory."
             )
-            insert_step_num = int(step_number_input)
-            if 1 <= insert_step_num <= highest_step_num + 1:
-                break
-            else:
-                print(
-                    f"Please enter a valid step number between 1 and {highest_step_num+1}."
-                )
-        except ValueError:
-            print("That's not a valid number. Please try again.")
-    step_title, insert_step_num = get_user_input(
-        steps_dict, step_title_input, step_number_input
-    )
-    renaming_plan = plan_renaming(steps_dict, insert_step_num)
-
-    # Calculate the file operations for the renaming plan
-    file_operations = calculate_renaming_operations(renaming_plan)
-    # Execute the file operations
-    for operation in file_operations:
-        if operation[0] == "makedirs":
-            os.makedirs(operation[1], exist_ok=True)
-        elif operation[0] == "rename":
-            os.rename(operation[1], operation[2])
-
-    # Calculate the file operations for the new step
-    new_step_operations = calculate_new_step_file_operations(
-        insert_step_num, step_title
-    )
-    # Execute the file operations for the new step
-    for operation in new_step_operations:
-        if operation[0] == "makedirs":
-            os.makedirs(operation[1], exist_ok=True)
-        elif operation[0] == "write_file":
-            with open(operation[1], "w") as file:
-                file.write(operation[2])
-        elif operation[0] == "chmod":
-            os.chmod(operation[1], operation[2])
-
-    # Read the current index.json data
-    index_file_path = "index.json"
-    with open(index_file_path, "r") as index_file:
-        current_index_data = json.load(index_file)
-
-    # Calculate the updates to the index.json data
-    updated_index_data = calculate_index_json_updates(
-        insert_step_num, step_title, current_index_data
-    )
-
-    # Write the updated index.json data back to the file
-    with open(index_file_path, "w") as index_file:
-        json.dump(updated_index_data, index_file, ensure_ascii=False, indent=4)
-    new_tree_structure = get_tree_structure()
-    # Print out the new file structure for confirmation
-    tree_diff = generate_diff(old_tree_structure, new_tree_structure)
-    print("\nFile structure changes:")
-    print(tree_diff, end="")
+            return
+        step_title_input = input("Enter the title for the new step: ")
+        highest_step_num = max(steps_dict.keys(), default=0)
+        step_number_input = input(
+            f"Enter the step number to insert the new step at (1-{highest_step_num+1}): "
+        )
+        step_title, insert_step_num = get_user_input(
+            steps_dict, step_title_input, step_number_input
+        )
+        renaming_plan = plan_renaming(steps_dict, insert_step_num)
+        renaming_operations = calculate_renaming_operations(renaming_plan)
+        new_step_operations = calculate_new_step_file_operations(
+            insert_step_num, step_title
+        )
+        index_file_path = "index.json"
+        with open(index_file_path, "r") as index_file:
+            current_index_data = json.load(index_file)
+        updated_index_data = calculate_index_json_updates(
+            insert_step_num, step_title, current_index_data
+        )
+        execute_file_operations(renaming_operations + new_step_operations)
+        with open(index_file_path, "w") as index_file:
+            json.dump(updated_index_data, index_file, ensure_ascii=False, indent=4)
+        new_tree_structure = get_tree_structure()
+        tree_diff = generate_diff(old_tree_structure, new_tree_structure)
+        print("\nFile structure changes:")
+        print(tree_diff, end="")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":

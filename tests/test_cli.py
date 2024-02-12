@@ -2,6 +2,7 @@
 import unittest
 from unittest import TestCase, mock
 from unittest.mock import patch, MagicMock
+from killercoda_cli.cli import FileOperation
 from killercoda_cli import cli
 
 
@@ -72,14 +73,14 @@ class TestCLI(unittest.TestCase):
     def test_calculate_renaming_operations(self):
         renaming_plan = [("step2", "step3"), ("step1", "step2")]
         expected_operations = [
-            ("makedirs", "step3"),
-            ("rename", "step2/background.sh", "step3/background.sh"),
-            ("rename", "step2/foreground.sh", "step3/foreground.sh"),
-            ("rename", "step2/step2.md", "step3/step3.md"),
-            ("makedirs", "step2"),
-            ("rename", "step1/background.sh", "step2/background.sh"),
-            ("rename", "step1/foreground.sh", "step2/foreground.sh"),
-            ("rename", "step1/step1.md", "step2/step2.md"),
+            FileOperation("makedirs", "step3"),
+            FileOperation("rename", "step2/background.sh", "step3/background.sh"),
+            FileOperation("rename", "step2/foreground.sh", "step3/foreground.sh"),
+            FileOperation("rename", "step2/step2.md", "step3/step3.md"),
+            FileOperation("makedirs", "step2"),
+            FileOperation("rename", "step1/background.sh", "step2/background.sh"),
+            FileOperation("rename", "step1/foreground.sh", "step2/foreground.sh"),
+            FileOperation("rename", "step1/step1.md", "step2/step2.md"),
         ]
         with patch("os.path.isdir", return_value=True), patch(
             "os.path.isfile", return_value=True
@@ -93,22 +94,29 @@ class TestCLI(unittest.TestCase):
         insert_step_num = 4
         step_title = "New Step"
         expected_operations = [
-            ("makedirs", "step4"),
-            ("write_file", "step4/step4.md", "# New Step\n"),
-            (
+            FileOperation("makedirs", "step4"),
+            FileOperation("write_file", "step4/step4.md", content="# New Step\n"),
+            FileOperation(
                 "write_file",
                 "step4/background.sh",
-                '#!/bin/sh\necho "New Step script"\n',
+                content='#!/bin/sh\necho "New Step script"\n',
             ),
-            (
+            FileOperation(
                 "write_file",
                 "step4/foreground.sh",
-                '#!/bin/sh\necho "New Step script"\n',
+                content='#!/bin/sh\necho "New Step script"\n',
             ),
-            ("chmod", "step4/background.sh", 0o755),
-            ("chmod", "step4/foreground.sh", 0o755),
+            FileOperation("chmod", "step4/background.sh", mode=0o755),
+            FileOperation("chmod", "step4/foreground.sh", mode=0o755),
         ]
         operations = cli.calculate_new_step_file_operations(insert_step_num, step_title)
+        #  # printe the operations
+        #  for op in operations:
+        #  print("Printing operations to better compare results")
+        #  content = f"'{op.content}'" if op.content is not None else "None"
+        #  mode = f"{op.mode}" if op.mode is not None else "None"
+        #  print(op.operation, op.path, content, mode)
+
         assert (
             operations == expected_operations
         ), "The new step file operations did not match the expected output."
