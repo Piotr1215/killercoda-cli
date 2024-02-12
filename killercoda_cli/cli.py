@@ -188,9 +188,7 @@ def calculate_new_step_file_operations(insert_step_num, step_title):
     return file_operations
 
 
-def calculate_index_json_updates(
-    steps_dict, insert_step_num, step_title, current_index_data
-):
+def calculate_index_json_updates(insert_step_num, step_title, current_index_data):
     """
     Update the index.json structure after inserting a new step.
 
@@ -337,7 +335,7 @@ def main():
 
     # Calculate the updates to the index.json data
     updated_index_data = calculate_index_json_updates(
-        steps_dict, insert_step_num, step_title, current_index_data
+        insert_step_num, step_title, current_index_data
     )
 
     # Write the updated index.json data back to the file
