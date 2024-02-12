@@ -9,12 +9,12 @@ from typing import List, Optional
 
 class FileOperation:
     """
-    # Define a type hint for the different types of file operations that can be performed.
-    # This Union type allows for specifying the operation (as a string literal indicating the type of action),
-    # and the required arguments for each operation type:
-    # - 'makedirs': Create a new directory; requires the path of the directory.
-    # - 'write_file': Write content to a file; requires the file path and the content to write.
-    # - 'chmod': Change the file mode; requires the file path and the new mode (as an integer).
+    Define a type hint for the different types of file operations that can be performed.
+    This Union type allows for specifying the operation (as a string literal indicating the type of action),
+    and the required arguments for each operation type:
+    - 'makedirs': Create a new directory; requires the path of the directory.
+    - 'write_file': Write content to a file; requires the file path and the content to write.
+    - 'chmod': Change the file mode; requires the file path and the new mode (as an integer).
 
     """
 
