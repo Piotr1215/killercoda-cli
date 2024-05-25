@@ -116,6 +116,14 @@ After:
 }
 ```
 
+## Testing
+
+To run unit tests, use the following command:
+
+```bash
+hatch run test:unit
+```
+
 ## Disclaimer
 
 This is an my personal project to easier create and manage killercoda scenarios.

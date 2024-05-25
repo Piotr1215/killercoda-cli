@@ -4,15 +4,12 @@ from unittest.mock import patch
 from io import StringIO
 import os
 
-# Assuming cli.py is structured as a module you can import from
 from killercoda_cli import cli
 
 class TestCLIIntegration(unittest.TestCase):
     def setUp(self):
-        # Setup test environment, e.g., creating a temporary directory structure
         self.test_dir = '/tmp/test_cli_integration'
         os.makedirs(self.test_dir, exist_ok=True)
-        # Create necessary files and directories for testing
         os.makedirs(os.path.join(self.test_dir, 'step1'), exist_ok=True)
         with open(os.path.join(self.test_dir, 'step1/step1.md'), 'w') as f:
             f.write("# Step 1\n")
@@ -27,68 +24,45 @@ class TestCLIIntegration(unittest.TestCase):
         self.assertIn("Usage: killercoda-cli [OPTIONS]", output)
         self.assertIn("A CLI helper for writing KillerCoda scenarios", output)
 
-    @patch('builtins.input', side_effect=["title for new step", "2"])
+    @patch('builtins.input', side_effect=["title for new step", "regular", "2"])
     @patch('sys.stdout', new_callable=StringIO)
     def test_cli_main_integration(self, mock_stdout, mock_input):
-        # Change the current working directory to the test directory
         os.chdir(self.test_dir)
-
-
-        
-        # Call the main function directly
         cli.main()
-        
-        # Check if the CLI tool ran successfully by inspecting stdout or other side effects
         self.assertIn("File structure changes:", mock_stdout.getvalue())
 
     def tearDown(self):
-        # Clean up the test directory after the test is complete
-        os.chdir(self.test_dir)  # Return to the original directory
-        os.chdir('/tmp')  # Return to the original directory
+        os.chdir('/tmp')
         for root, dirs, files in os.walk(self.test_dir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
+        os.rmdir(self.test_dir)
 
-    @patch('builtins.input', side_effect=["New Step Title", "0", "2"])
+    @patch('builtins.input', side_effect=["New Step Title", "regular", "100"])
     @patch('sys.stdout', new_callable=StringIO)
     def test_cli_main_invalid_step_number(self, mock_stdout, mock_input):
-        # Change the current working directory to the test directory
         os.chdir(self.test_dir)
-
-        # Call the main function directly
         cli.main()
+        self.assertIn("Invalid step number:", mock_stdout.getvalue())
 
-        # Check if the CLI tool printed the correct error message for invalid step number
-        self.assertIn("Please enter a valid step number between 1 and 2.", mock_stdout.getvalue())
-
-    @patch('builtins.input', side_effect=["New Step Title", "not a number", "2"])
+    @patch('builtins.input', side_effect=["New Step Title", "regular", "not a number"])
     @patch('sys.stdout', new_callable=StringIO)
     def test_cli_main_non_numeric_step_number(self, mock_stdout, mock_input):
-        # Change the current working directory to the test directory
         os.chdir(self.test_dir)
-        try:
-            # Call the main function directly
-            cli.main()
-        except ValueError as e:
-            # Check if the CLI tool printed the correct error message for non-numeric input
-            self.assertIn("That's not a valid number. Please try again.", str(e))
+        cli.main()
+        self.assertIn("Invalid step number:", mock_stdout.getvalue())
 
     @patch('sys.stdout', new_callable=StringIO)
     def test_cli_main_no_step_files(self, mock_stdout):
-        # Change the current working directory to an empty test directory
         empty_test_dir = '/tmp/test_cli_no_steps'
         os.makedirs(empty_test_dir, exist_ok=True)
         os.chdir(empty_test_dir)
-        try:
+        with self.assertRaises(SystemExit) as cm:
             cli.main()
-        except SystemExit as e:
-            self.assertEqual(e.code, 1)
-            self.assertIn("The 'index.json' file is missing. Please ensure it is present in the current directory.", mock_stdout.getvalue())
-            self.assertIn("No step files or directories found.", mock_stdout.getvalue())
-
-        # Clean up the empty test directory
+        self.assertEqual(cm.exception.code, 1)
+        self.assertIn("The 'index.json' file is missing. Please ensure it is present in the current directory.", mock_stdout.getvalue())
         os.rmdir(empty_test_dir)
 
 if __name__ == "__main__":
