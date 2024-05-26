@@ -12,9 +12,11 @@
 * [Documentation](#documentation)
   * [Requirements](#requirements)
   * [Example usage](#example-usage)
+* [Development](#development)
+* [Testing](#testing)
 * [Disclaimer](#disclaimer)
 * [License](#license)
-
+ 
 ## Installation
 
 ```console
@@ -118,6 +120,11 @@ After:
   ]
 }
 ```
+
+## Development
+
+Installing locally with `pip install -e . --user` will allow you to run the tool
+locally.
 
 ## Testing
 
