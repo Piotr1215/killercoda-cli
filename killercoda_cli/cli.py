@@ -368,8 +368,13 @@ def execute_file_operations(file_operations):
             os.chmod(operation.path, operation.mode)
         elif operation.operation == "rename":
             os.rename(operation.path, operation.content)
+
 def init_project():
-    """initialize a new project by creting index.json file"""
+    """initialize a new project by creating index.json file"""
+    if os.path.exists("index.json"):
+        print("The 'index.json' file already exists. Please edit the existing file.")
+        return
+    
     index_data = {
         "details": {
             "title": "Project Title",
