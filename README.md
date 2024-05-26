@@ -36,6 +36,8 @@ The `killercoda-cli` solves some of those problems by:
 
 - Adding a new step after the existing last step and creating a directory for
   including foreground and background scripts placeholders.
+- Adding a regular step with `background.sh` and `foreground.sh` scripts or a verify
+  step with `verify.sh` script.
 - Renaming and re indexing step files and directories allowing for inserting a
   step in between existing steps and moving content _down_
 - Updating the `index.json` file to reflect changes in step order and titles.
@@ -65,6 +67,7 @@ And you want to insert a new step between `step1.md` and `step2/`, titled "New S
 1. Run `killercoda-cli`.
 2. Enter the title for the new step: "New Step".
 3. Enter the step number to insert the new step at: 2.
+4. Enter the step type (regular or verify): regular.
 
 After running the tool, your directory structure will be updated to:
 
@@ -115,6 +118,18 @@ After:
   ]
 }
 ```
+
+## Testing
+
+To run the tests, use the following commands:
+
+Here is the text rendered as a Markdown list:
+
+* `hatch run test:unit` - to run the unit tests.
+* `hatch run test:integration` - to run the integration tests.
+* `hatch run test:coverage-report` - to generate the coverage report.
+
+Let me know if you have any further requests!
 
 ## Disclaimer
 

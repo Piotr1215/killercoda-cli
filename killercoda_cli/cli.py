@@ -42,6 +42,10 @@ class FileOperation:
             and self.mode == other.mode
         )
 
+    def __repr__(self):
+        return (f"FileOperation(operation={self.operation}, path={self.path}, "
+                f"content={self.content}, mode={self.mode})")
+
 
 #  TODO:(piotr1215) fallback if tree is not installed
 def get_tree_structure():
@@ -175,6 +179,8 @@ def calculate_renaming_operations(renaming_plan):
             new_background = os.path.join(new_name, "background.sh")
             old_foreground = os.path.join(old_name, "foreground.sh")
             new_foreground = os.path.join(new_name, "foreground.sh")
+            old_verify = os.path.join(old_name, "verify.sh")
+            new_verify = os.path.join(new_name, "verify.sh")
 
             # Check and move background.sh if it exists
             if os.path.isfile(old_background):
@@ -186,6 +192,12 @@ def calculate_renaming_operations(renaming_plan):
             if os.path.isfile(old_foreground):
                 file_operations.append(
                     FileOperation("rename", old_foreground, content=new_foreground)
+                )
+
+            # Check and move verify.sh if it exists
+            if os.path.isfile(old_verify):
+                file_operations.append(
+                    FileOperation("rename", old_verify, content=new_verify)
                 )
 
             # Rename the step markdown file
@@ -210,8 +222,10 @@ def calculate_renaming_operations(renaming_plan):
     return file_operations
 
 
+from typing import List
+
 def calculate_new_step_file_operations(
-    insert_step_num: int, step_title: str
+    insert_step_num: int, step_title: str, step_type: str
 ) -> List[FileOperation]:
     """
     Calculate the file operations needed to add a new step to the scenario.
@@ -222,6 +236,7 @@ def calculate_new_step_file_operations(
     Args:
         insert_step_num (int): The step number where the new step will be inserted.
         step_title (str): The title for the new step.
+        step_type (str): The type of the step, either "regular" or "verify".
 
     Returns:
         List[FileOperation]: A list of file operations that, when executed, will set up
@@ -229,38 +244,55 @@ def calculate_new_step_file_operations(
     """
     new_step_folder = f"step{insert_step_num}"
     new_step_md = f"{new_step_folder}/step{insert_step_num}.md"
-    new_step_background = f"{new_step_folder}/background.sh"
-    new_step_foreground = f"{new_step_folder}/foreground.sh"
 
     file_operations = [
         FileOperation("makedirs", new_step_folder),
         FileOperation("write_file", new_step_md, content=f"# {step_title}\n"),
-        FileOperation(
-            "write_file",
-            new_step_background,
-            content=f'#!/bin/sh\necho "{step_title} script"\n',
-        ),
-        FileOperation(
-            "write_file",
-            new_step_foreground,
-            content=f'#!/bin/sh\necho "{step_title} script"\n',
-        ),
-        FileOperation("chmod", new_step_background, mode=0o755),
-        FileOperation("chmod", new_step_foreground, mode=0o755),
     ]
+
+    if step_type == "regular":
+        new_step_background = f"{new_step_folder}/background.sh"
+        new_step_foreground = f"{new_step_folder}/foreground.sh"
+
+        file_operations += [
+            FileOperation(
+                "write_file",
+                new_step_background,
+                content=f'#!/bin/sh\necho "{step_title} script"\n',
+            ),
+            FileOperation(
+                "write_file",
+                new_step_foreground,
+                content=f'#!/bin/sh\necho "{step_title} script"\n',
+            ),
+            FileOperation("chmod", new_step_background, mode=0o755),
+            FileOperation("chmod", new_step_foreground, mode=0o755),
+        ]
+
+    elif step_type == "verify":
+        new_step_verify = f"{new_step_folder}/verify.sh"
+
+        file_operations += [
+            FileOperation(
+                "write_file",
+                new_step_verify,
+                content=f'#!/bin/sh\necho "{step_title} script"\n',
+            ),
+            FileOperation("chmod", new_step_verify, mode=0o755),
+        ]
 
     return file_operations
 
 
-def calculate_index_json_updates(insert_step_num, step_title, current_index_data):
+def calculate_index_json_updates(insert_step_num, step_title, current_index_data, step_type):
     """
     Update the index.json structure after inserting a new step.
 
     Args:
-        steps_dict (dict): A dictionary mapping existing step numbers to their paths.
         insert_step_num (int): The step number where the new step will be inserted.
         step_title (str): The title for the new step.
         current_index_data (dict): The current data from index.json.
+        step_type (str): The type of the step, either "verify" or "regular".
 
     Returns:
         dict: The updated index.json data reflecting the new step insertion.
@@ -268,12 +300,15 @@ def calculate_index_json_updates(insert_step_num, step_title, current_index_data
     # Load the index.json file
     data = current_index_data
 
-    # Create new step entry
+    # Create new step entry based on the step type
     new_step_data = {
         "title": step_title,
         "text": f"step{insert_step_num}/step{insert_step_num}.md",
-        "background": f"step{insert_step_num}/background.sh",
     }
+    if step_type == "verify":
+        new_step_data["verify"] = f"step{insert_step_num}/verify.sh"
+    else:  # Default to "regular"
+        new_step_data["background"] = f"step{insert_step_num}/background.sh"
 
     # Insert the new step data into the steps list
     data["details"]["steps"].insert(insert_step_num - 1, new_step_data)
@@ -283,7 +318,10 @@ def calculate_index_json_updates(insert_step_num, step_title, current_index_data
         step = data["details"]["steps"][i]
         step_number = i + 1  # Convert to 1-based index
         step["text"] = f"step{step_number}/step{step_number}.md"
-        step["background"] = f"step{step_number}/background.sh"
+        if "verify" in step:
+            step["verify"] = f"step{step_number}/verify.sh"
+        else:
+            step["background"] = f"step{step_number}/background.sh"
 
     # Write the updated data back to index.json
     return data
@@ -359,19 +397,20 @@ def main():
         step_number_input = input(
             f"Enter the step number to insert the new step at (1-{highest_step_num+1}): "
         )
+        step_type = input("Enter the type of step (regular or verify): ")
         step_title, insert_step_num = get_user_input(
             steps_dict, step_title_input, step_number_input
         )
         renaming_plan = plan_renaming(steps_dict, insert_step_num)
         renaming_operations = calculate_renaming_operations(renaming_plan)
         new_step_operations = calculate_new_step_file_operations(
-            insert_step_num, step_title
+            insert_step_num, step_title, step_type
         )
         index_file_path = "index.json"
         with open(index_file_path, "r") as index_file:
             current_index_data = json.load(index_file)
         updated_index_data = calculate_index_json_updates(
-            insert_step_num, step_title, current_index_data
+            insert_step_num, step_title, current_index_data, step_type
         )
         execute_file_operations(renaming_operations + new_step_operations)
         with open(index_file_path, "w") as index_file:
