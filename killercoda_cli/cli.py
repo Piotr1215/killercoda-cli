@@ -340,9 +340,11 @@ def display_help():
 
         Options:
           -h, --help    Show this message and exit.
+          -v, --version Display the version of the tool.
 
         Basic Commands:
-          No specific commands needed. Running 'killercoda-cli' starts the interactive process.
+          Running 'killercoda-cli' starts the interactive process.
+          init: Initialize a new project by creating an 'index.json' file.
 
         Requirements:
           - The tool must be run in a directory containing step files or directories (e.g., step1.md, step2/).
@@ -366,7 +368,18 @@ def execute_file_operations(file_operations):
             os.chmod(operation.path, operation.mode)
         elif operation.operation == "rename":
             os.rename(operation.path, operation.content)
-
+def init_project():
+    """initialize a new project by creting index.json file"""
+    index_data = {
+        "details": {
+            "title": "Project Title",
+            "description": "Project Description",
+            "steps": [],
+        }
+    }
+    with open("index.json", "w") as index_file:
+        json.dump(index_data, index_file, ensure_ascii=False, indent=4)
+    print("Project initialized successfully. Please edit the 'index.json' file to add steps.")
 
 def main():
     """
@@ -384,6 +397,10 @@ def main():
         if len(sys.argv) > 1 and sys.argv[1] in ["-v", "--version"]:
             print(f"killercoda-cli v{__version__}")
             return
+        if len(sys.argv) > 1 and sys.argv[1] in ["init"]:
+            init_project()
+            return
+        
         old_tree_structure = get_tree_structure()
         directory_items = os.listdir(".")
         steps_dict = get_current_steps_dict(directory_items)
