@@ -381,7 +381,7 @@ def main():
         if len(sys.argv) > 1 and sys.argv[1] in ["-h", "--help"]:
             display_help()
             return
-        if sys.argv[1] in ["-v", "--version"]:
+        if len(sys.argv) > 1 and sys.argv[1] in ["-v", "--version"]:
             print(f"killercoda-cli v{__version__}")
             return
         old_tree_structure = get_tree_structure()
