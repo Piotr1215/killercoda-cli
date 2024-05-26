@@ -258,3 +258,27 @@ class TestCLI(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    @mock.patch("builtins.open", new_callable=mock.mock_open)
+    @mock.patch("json.dump")
+    @mock.patch("os.path.exists", return_value=False)
+    def test_init_project(self, mock_exists, mock_json_dump, mock_open):
+        cli.init_project()
+        mock_open.assert_called_once_with("index.json", "w")
+        mock_json_dump.assert_called_once()
+        expected_index_data = {
+            "details": {
+                "title": "Project Title",
+                "description": "Project Description",
+                "steps": [],
+            }
+        }
+        args, kwargs = mock_json_dump.call_args
+        self.assertEqual(args[0], expected_index_data, "The index.json data does not match the expected structure.")
+        self.assertTrue("ensure_ascii" in kwargs and not kwargs["ensure_ascii"], "ensure_ascii should be False.")
+        self.assertTrue("indent" in kwargs and kwargs["indent"] == 4, "Indentation should be set to 4.")
+
+    @mock.patch("sys.argv", ["killercoda-cli", "--version"])
+    @mock.patch("builtins.print")
+    def test_version_flag(self, mock_print):
+        cli.main()
+        mock_print.assert_called_with(f"killercoda-cli v{cli.__about__.__version__}")
