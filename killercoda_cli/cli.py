@@ -356,9 +356,6 @@ def display_help():
 
 
 def execute_file_operations(file_operations):
-    print("Debug file operations before execution:")  # Debugging line
-    for op in file_operations:
-        print(op)  # Debugging line
     for operation in file_operations:
         if operation.operation == "makedirs":
             os.makedirs(operation.path, exist_ok=True)
