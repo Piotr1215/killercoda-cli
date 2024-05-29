@@ -2,18 +2,11 @@ import json
 import os
 import inquirer
 
-# Define environment and backend options
-environments = {
-    "ubuntu": "Ubuntu 20.04 with Docker and Podman",
-    "ubuntu-4GB": "Ubuntu 20.04 with Docker and Podman, 4GB environment",
-    "kubernetes-kubeadm-1node": "Kubeadm cluster with one control plane, taint removed, ready to schedule workload, 2GB environment",
-    "kubernetes-kubeadm-1node-4GB": "Kubeadm cluster with one control plane, taint removed, ready to schedule workload, 4GB environment",
-    "kubernetes-kubeadm-2nodes": "Kubeadm cluster with one control plane and one node, ready to schedule workload, 4GB environment"
-}
-
 backends = {
     "kubernetes-kubeadm-1node": "Kubernetes kubeadm 1 node",
     "kubernetes-kubeadm-2nodes": "Kubernetes kubeadm 2 nodes",
+    "kubernetes-kubeadm-1node-4GB": "Kubeadm cluster with one control plane, taint removed, ready to schedule workload, 4GB environment",
+    "ubuntu-4GB": "Ubuntu 20.04 with Docker and Podman, 4GB environment",
     "ubuntu": "Ubuntu 20.04"
 }
 
