@@ -11,12 +11,15 @@
 * [Introduction](#introduction)
 * [Documentation](#documentation)
   * [Requirements](#requirements)
-  * [Example usage](#example-usage)
+* [Usage](#usage)
+  * [Initialize a new scenario](#initialize-a-new-scenario)
+  * [Add a new step](#add-a-new-step)
+  * [Adding assets](#adding-assets)
 * [Development](#development)
 * [Testing](#testing)
 * [Disclaimer](#disclaimer)
 * [License](#license)
- 
+
 ## Installation
 
 ```console
@@ -54,9 +57,24 @@ at: https://piotr1215.github.io/killercoda-cli/killercoda_cli/cli.html.
 - The tool must be run in a directory containing step files or directories (e.g. step1.md, step2/).
 - An `index.json` file must be present in the directory, which contains metadata about the steps.
 
-### Example usage
+## Usage
 
-Suppose you have a scenario directory with the following structure:
+### Initialize a new scenario
+
+In a new directory run `killercoda-cli init`. This command will trigger a wizard
+to create a new scenario. After answering all the questions, the directory will
+contain the following structure:
+
+    .
+    ├── index.json
+    ├── intro.md
+    ├── finish.md
+
+### Add a new step
+
+From here run `killercoda-cli` without arguments. This command will trigger a
+wizard to add a new step. After answering all the questions, the directory will
+contain steps in the similar structure:
 
     .
     ├── index.json
@@ -120,6 +138,20 @@ After:
   ]
 }
 ```
+
+### Adding assets
+
+The `killercoda-cli assets` command has been added to facilitate the generation of necessary assets and folder structures in the current working directory using a predefined [cookiecutter template](https://github.com/Piotr1215/cookiecutter-killercoda-assets).
+
+> [!NOTE]
+> The assets are opinionated and may not fit all use cases, but it's a good
+> starting point to add some interactivity to the scenario.
+
+This command will generate the required folder structure and files directly in
+the current working directory and **remove** the temporary directory.
+
+Assets are NOT automatically added to the `index.json` to leave the decision to
+the user how to bring the assets into the scenario.
 
 ## Development
 

@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 from typing import List, Optional
+from cookiecutter.main import cookiecutter
 from killercoda_cli.__about__ import __version__
 from killercoda_cli.scenario_init import init_project
 
@@ -223,7 +224,6 @@ def calculate_renaming_operations(renaming_plan):
     return file_operations
 
 
-from typing import List
 
 def calculate_new_step_file_operations(
     insert_step_num: int, step_title: str, step_type: str
@@ -346,6 +346,7 @@ def display_help():
         Basic Commands:
           Running 'killercoda-cli' starts the interactive process.
           init: Initialize a new project by creating an 'index.json' file.
+          assets: Generate the predefined assets folder structure.
 
         Requirements:
           - The tool must be run in a directory containing step files or directories (e.g., step1.md, step2/).
@@ -370,6 +371,22 @@ def execute_file_operations(file_operations):
         elif operation.operation == "rename":
             os.rename(operation.path, operation.content)
 
+def generate_assets():
+    try:
+        template_repo = 'https://github.com/Piotr1215/cookiecutter-killercoda-assets'
+        output_dir = os.getcwd()
+        
+        print(f"Generating assets from template: {template_repo}")
+        print(f"Output directory: {output_dir}")
+        
+        cookiecutter(template_repo, no_input=True, extra_context={"project_name": "killercoda-assets"}, output_dir=output_dir)
+        
+        print("Assets generated successfully.")
+    except Exception as e:
+        print(f"An error occurred in generate_assets: {e}")
+        raise
+
+
 def main():
     """
     This function orchestrates the entire process of adding a new step to the scenario,
@@ -388,6 +405,9 @@ def main():
             return
         if len(sys.argv) > 1 and sys.argv[1] in ["init"]:
             init_project()
+            return
+        if len(sys.argv) > 1 and sys.argv[1] in ["assets"]:
+            generate_assets()
             return
         
         old_tree_structure = get_tree_structure()
@@ -426,7 +446,9 @@ def main():
         print("\nFile structure changes:")
         print(tree_diff, end="")
     except Exception as e:
+        import traceback
         print(f"An error occurred: {e}")
+        traceback.print_exc()
 
 
 if __name__ == "__main__":

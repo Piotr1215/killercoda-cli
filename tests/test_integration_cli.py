@@ -3,6 +3,7 @@ import json
 from unittest.mock import patch
 from io import StringIO
 import os
+import shutil
 
 # Assuming cli.py is structured as a module you can import from
 from killercoda_cli import cli
@@ -18,6 +19,24 @@ class TestCLIIntegration(unittest.TestCase):
             f.write("# Step 1\n")
         with open(os.path.join(self.test_dir, 'index.json'), 'w') as f:
             json.dump({"details": {"steps": [{"title": "Step 1", "text": "step1/step1.md", "background": "step1/background.sh"}]}}, f)
+
+    def test_generate_assets(self):
+        # Setup test environment
+        test_generate_dir = '/tmp/test_generate_assets'
+        os.makedirs(test_generate_dir, exist_ok=True)
+        os.chdir(test_generate_dir)
+        
+        # Run the generate_assets function
+        cli.generate_assets()
+
+        # Verify the generated files and directories
+        self.assertTrue(os.path.exists(os.path.join(test_generate_dir, 'assets')))
+        self.assertTrue(os.path.exists(os.path.join(test_generate_dir, 'assets', 'deploy.sh')))
+        self.assertTrue(os.path.exists(os.path.join(test_generate_dir, 'background.sh')))
+        self.assertTrue(os.path.exists(os.path.join(test_generate_dir, 'foreground.sh')))
+        
+        # Clean up the test directory
+        shutil.rmtree(test_generate_dir)
 
     @patch('sys.argv', ['killercoda-cli', '--help'])
     @patch('sys.stdout', new_callable=StringIO)
