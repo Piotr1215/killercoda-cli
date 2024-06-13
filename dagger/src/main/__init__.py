@@ -19,9 +19,14 @@ class KillercodaCli:
     @function
     def build(self, source: dagger.Directory) -> dagger.Container:
         """Build the application container"""
-        return (
+        build = (
             self.build_env(source)
             .with_exec(["hatch", "build"])
+        )
+        return (
+            dag.container()
+            .from_("python:3.10-slim")
+            .with_directory("/dist", build.directory("/src/dist"))
         )
 
     @function
@@ -53,18 +58,3 @@ class KillercodaCli:
             .with_exec(["pip", "install", "inquirer"])
             .with_exec(["pip", "install", "pytest"])
         )
-
-
-# Example usage:
-if __name__ == "__main__":
-    import anyio
-
-    async def main():
-        async with dagger.Connection() as client:
-            source = await client.host().directory(".", exclude=[".git", "__pycache__"])
-            killercoda_cli = KillercodaCli()
-
-            build_result = await killercoda_cli.publish(source)
-            print(build_result)
-
-    anyio.run(main)
