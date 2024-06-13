@@ -1,0 +1,6 @@
+{
+  "name": "killercoda-cli",
+  "sdk": "python",
+  "source": "dagger",
+  "engineVersion": "v0.11.7"
+}
