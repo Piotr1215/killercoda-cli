@@ -251,7 +251,7 @@ def calculate_new_step_file_operations(
         FileOperation("write_file", new_step_md, content=f"# {step_title}\n"),
     ]
 
-    if step_type == "regular":
+    if step_type == "r":
         new_step_background = f"{new_step_folder}/background.sh"
         new_step_foreground = f"{new_step_folder}/foreground.sh"
 
@@ -270,7 +270,7 @@ def calculate_new_step_file_operations(
             FileOperation("chmod", new_step_foreground, mode=0o755),
         ]
 
-    elif step_type == "verify":
+    elif step_type == "v":
         new_step_verify = f"{new_step_folder}/verify.sh"
 
         file_operations += [
@@ -306,7 +306,7 @@ def calculate_index_json_updates(insert_step_num, step_title, current_index_data
         "title": step_title,
         "text": f"step{insert_step_num}/step{insert_step_num}.md",
     }
-    if step_type == "verify":
+    if step_type == "v":
         new_step_data["verify"] = f"step{insert_step_num}/verify.sh"
     else:  # Default to "regular"
         new_step_data["background"] = f"step{insert_step_num}/background.sh"
@@ -423,7 +423,7 @@ def main():
         step_number_input = input(
             f"Enter the step number to insert the new step at (1-{highest_step_num+1}): "
         )
-        step_type = input("Enter the type of step (regular or verify): ")
+        step_type = input("Enter the type of step (r for regular or v for verify): ")
         step_title, insert_step_num = get_user_input(
             steps_dict, step_title_input, step_number_input
         )

@@ -130,7 +130,7 @@ class TestCLI(unittest.TestCase):
     def test_calculate_new_step_file_operations(self):
         insert_step_num = 4
         step_title = "New Step"
-        step_type = "regular"  # Assuming "regular" is a valid step type. Adjust as necessary.
+        step_type = "r"  # Assuming "r" is a valid step type. Adjust as necessary.
         expected_operations = [
             FileOperation("makedirs", "step4"),
             FileOperation("write_file", "step4/step4.md", content="# New Step\n"),
@@ -162,7 +162,7 @@ class TestCLI(unittest.TestCase):
     def test_calculate_index_json_updates_for_verify(self):
         insert_step_num = 2
         step_title = "New Step"
-        step_type = "verify"
+        step_type = "v"
         current_index_data = {
             "details": {
                 "steps": [
