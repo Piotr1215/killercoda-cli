@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - release-*
     paths:
       - 'killercoda_cli/__about__.py'
   pull_request:
@@ -25,49 +24,86 @@ env:
   PYTHON_VERSION: '3.11.5'
 
 jobs:
-  build-and-test:
-    uses: ./.github/workflows/build-reusable.yml
-    with:
-      python-version: ${{ env.PYTHON_VERSION }}
-
-  check-version:
+  lint:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get current version
-        id: get_version
-        run: echo "VERSION=$(grep -oP '(?<=__version__ = ")[^"]*' killercoda_cli/__about__.py)" >> $GITHUB_ENV
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Check version change
-        id: check_version
-        run: |
-          git fetch --tags
-          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-          CURRENT_VERSION=${{ env.VERSION }}
-          if [ "$LATEST_TAG" = "v$CURRENT_VERSION" ]; then
-            echo "No version change detected."
-            echo "version_changed=false" >> $GITHUB_ENV
-          else
-            echo "Version change detected."
-            echo "version_changed=true" >> $GITHUB_ENV
+      - name: Setup Hatch
+        run: pipx install hatch==1.7.0
 
-  publish:
-    if: needs.check-version.outputs.version_changed == 'true'
-    needs:
-      - build-and-test
-      - check-version
+  unit-test:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Hatch
+        run: pipx install hatch==1.7.0
+
+      - name: Run Unit Tests
+        run: hatch run test:unit
+
+      - name: Generate test coverage
+        run: hatch run test:coverage-report
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+        env:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: Piotr1215/killercoda-cli
+
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Hatch
+        run: pipx install hatch==1.7.0
 
       - name: Get PyPI Project Version
         run: |
-          VERSION=$(grep -oP '(?<=__version__ = ")[^"]*' killercoda_cli/__about__.py)
+          VERSION=$(grep -oP '(?<=__version__ = ")[^"]*' __about__.py)
           echo "PYPI_VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Build Sdist and Wheel
+        run: hatch build
+
+      - name: Upload Sdist and Wheel to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: "dist/*"
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs:
+      - build
+    runs-on: ubuntu-22.04
+    steps:
       - name: Download Sdist and Wheel from GitHub
         uses: actions/download-artifact@v4
         with:
@@ -109,10 +145,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
