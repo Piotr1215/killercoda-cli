@@ -2,4 +2,4 @@
 #
 # SPDX-License-Identifier: MIT
 # This is setup in build process in CI, but also servers as a record for the --version flag
-__version__ = "1.3.4"
+__version__ = "1.1.4"
