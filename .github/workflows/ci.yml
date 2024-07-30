@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - '__about__.py'
+      - 'killercoda_cli/__about__.py'
   pull_request:
     branches:
       - main
