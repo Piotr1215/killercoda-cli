@@ -4,33 +4,24 @@ on:
   push:
     branches:
       - main
-      - release-*
-  pull_request: {}
+    paths:
+      - '__about__.py'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
-    inputs:
-      version:
-        description: PyPI project version (e.g. v0.1.0)
-        required: false
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages.
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run
-# in-progress and latest queued. However, do NOT cancel in-progress runs as we
-# want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 env:
-  # Common versions
   PYTHON_VERSION: '3.11.5'
-
-  # The PyPi project version to push. The default is v0.0.0+gitdate-gitsha.
-  PYPI_VERSION: ${{ inputs.version }}
 
 jobs:
   lint:
@@ -64,7 +55,7 @@ jobs:
       - name: Run Unit Tests
         run: hatch run test:unit
 
-      - name: Generate test coverate
+      - name: Generate test coverage
         run: hatch run test:coverage-report
 
       - name: Upload coverage reports to Codecov
@@ -91,16 +82,10 @@ jobs:
       - name: Setup Hatch
         run: pipx install hatch==1.7.0
 
-      # If a version wasn't explicitly passed as a workflow_dispatch input we
-      # default to version v0.0.0+<git-commit-date>-<git-short-sha>, for example
-      # v0.0.0+20231101115142-1091066df799. This is a simple implementation of
-      # Go's pseudo-versions: https://go.dev/ref/mod#pseudo-versions.
-      - name: Set Default PyPI Project Version
-        if: env.PYPI_VERSION == ''
-        run: echo "PYPI_VERSION=v0.0.0+$(date -d@$(git show -s --format=%ct) +%Y%m%d%H%M%S)-$(git rev-parse --short=12 HEAD)" >> $GITHUB_ENV
-
-      - name: Set PyPI Project Version
-        run: hatch version ${{ env.PYPI_VERSION }}
+      - name: Get PyPI Project Version
+        run: |
+          VERSION=$(grep -oP '(?<=__version__ = ")[^"]*' __about__.py)
+          echo "PYPI_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Build Sdist and Wheel
         run: hatch build
@@ -113,10 +98,8 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-
   publish:
-    # Don't publish unless we were run with an explicit version.
-    if: ${{ inputs.version != '' }}
+    if: github.ref == 'refs/heads/main'
     needs:
       - build
     runs-on: ubuntu-22.04
@@ -132,11 +115,34 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
+      - name: Generate Changelog
+        run: |
+          if [ $(git tag -l | wc -l) -eq 0 ]; then
+            echo "No previous tags found. Generating changelog for all commits."
+            echo "## v${{ env.PYPI_VERSION }} - $(date +'%Y-%m-%d')" > CHANGELOG.md
+            git log --pretty=format:"* %s (%h)" >> CHANGELOG.md
+          else
+            PREVIOUS_TAG=$(git describe --tags --abbrev=0)
+            echo "## v${{ env.PYPI_VERSION }} - $(date +'%Y-%m-%d')" > CHANGELOG.md
+            git log $PREVIOUS_TAG..HEAD --pretty=format:"* %s (%h)" >> CHANGELOG.md
+          fi
+
+      - name: Create Git Tag
+        run: |
+          git tag "v${{ env.PYPI_VERSION }}"
+          git push origin "v${{ env.PYPI_VERSION }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v${{ env.PYPI_VERSION }}"
+          name: "v${{ env.PYPI_VERSION }}"
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   docs:
-    # The simple docs tool we're using doesn't support versions, so our docs
-    # will only reflect what's in main.
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
