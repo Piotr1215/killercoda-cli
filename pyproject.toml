@@ -53,7 +53,7 @@ dependencies = [
 [tool.hatch.envs.test]
 type = "virtual"
 path = ".venv-test"
-dependencies = ["coverage"]
+dependencies = ["coverage", "pytest"]
 
 [tool.hatch.envs.test.scripts]
 unit = "coverage run --source=killercoda_cli -m unittest discover -v tests"
