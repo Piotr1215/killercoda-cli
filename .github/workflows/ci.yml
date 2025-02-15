@@ -120,6 +120,11 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
+      - name: Get PyPI Project Version
+        run: |
+          VERSION=$(grep -oP '(?<=__version__ = ")[^"]*' killercoda_cli/__about__.py)
+          echo "PYPI_VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Generate Changelog
         run: |
           if [ $(git tag -l | wc -l) -eq 0 ]; then
