@@ -36,7 +36,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Hatch
-        run: pipx install hatch==1.7.0
+        run: pipx install hatch==1.14.0
 
   unit-test:
     runs-on: ubuntu-22.04
@@ -50,7 +50,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Hatch
-        run: pipx install hatch==1.7.0
+        run: pipx install hatch==1.14.0
 
       - name: Run Unit Tests
         run: hatch run test:unit
@@ -80,11 +80,11 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Hatch
-        run: pipx install hatch==1.7.0
+        run: pipx install hatch==1.14.0
 
       - name: Get PyPI Project Version
         run: |
-          VERSION=$(grep -oP '(?<=__version__ = ")[^"]*' __about__.py)
+          VERSION=$(grep -oP '(?<=__version__ = ")[^"]*' killercoda_cli/__about__.py)
           echo "PYPI_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Build Sdist and Wheel
@@ -154,7 +154,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Hatch
-        run: pipx install hatch==1.7.0
+        run: pipx install hatch==1.14.0
 
       - name: Build Documentation
         run: hatch run docs:pdoc killercoda_cli -o docs
