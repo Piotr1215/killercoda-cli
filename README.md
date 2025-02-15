@@ -153,6 +153,30 @@ the current working directory and **remove** the temporary directory.
 Assets are NOT automatically added to the `index.json` to leave the decision to
 the user how to bring the assets into the scenario.
 
+### Validating courses
+
+The `killercoda-cli validate` command allows you to validate the structure and configuration of your scenarios:
+
+```console
+➜ killercoda-cli validate
+
+=== Scenario Validation ===
+[+]json-syntax                                        ok
+[+]step-1                                             ok
+[+]step-2                                             ok
+
+Validation Status: PASSED
+Location: /scenario/folder
+```
+
+This command checks:
+- Presence and validity of index.json files
+- Required fields in configuration
+- Existence of all referenced files
+- Step structure and consistency
+
+The validation command is useful for CI/CD pipelines to ensure course integrity before deployment.
+
 ## Development
 
 Installing locally with `pip install -e . --user` will allow you to run the tool

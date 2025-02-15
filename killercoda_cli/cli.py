@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+
+"""
+Main CLI module for the killercoda-cli tool.
+This module provides functionality for managing KillerCoda scenario steps,
+including step creation, renumbering, and file management.
+"""
+
 import difflib
 import json
 import os
@@ -11,15 +18,15 @@ from killercoda_cli.scenario_init import init_project
 
 class FileOperation:
     """
-    Define a type hint for the different types of file operations that can be performed.
-    This Union type allows for specifying the operation (as a string literal indicating the type of action),
-    and the required arguments for each operation type:
-    - 'makedirs': Create a new directory; requires the path of the directory.
-    - 'write_file': Write content to a file; requires the file path and the content to write.
-    - 'chmod': Change the file mode; requires the file path and the new mode (as an integer).
-
+    Defines file operation types and their parameters.
+    Each operation represents a specific file system action:
+    
+    Operations:
+    - 'makedirs': Create directory hierarchy
+    - 'write_file': Write content to file
+    - 'chmod': Change file permissions
+    - 'rename': Rename file or directory
     """
-
     def __init__(
         self,
         operation: str,
@@ -27,16 +34,27 @@ class FileOperation:
         content: Optional[str] = None,
         mode: Optional[int] = None,
     ):
+        """
+        Initialize a file operation with required parameters.
+        
+        Args:
+            operation: Type of operation ('makedirs', 'write_file', 'chmod', 'rename')
+            path: Target file/directory path
+            content: File content for write operations
+            mode: Permission mode for chmod operations
+        """
         self.operation = operation
         self.path = path
         self.content = content
         self.mode = mode
 
     def __eq__(self, other):
+        """
+        Compare two FileOperation instances for equality.
+        Compares all attributes: operation, path, content, and mode.
+        """
         if not isinstance(other, FileOperation):
-            # don't attempt to compare against unrelated types
             return NotImplemented
-
         return (
             self.operation == other.operation
             and self.path == other.path
@@ -45,35 +63,35 @@ class FileOperation:
         )
 
     def __repr__(self):
+        """
+        String representation of the FileOperation instance.
+        Includes all attributes for debugging purposes.
+        """
         return (f"FileOperation(operation={self.operation}, path={self.path}, "
                 f"content={self.content}, mode={self.mode})")
-
 
 #  TODO:(piotr1215) fallback if tree is not installed
 def get_tree_structure():
     """
-    Retrieves the current directory structure using the 'tree' command.
-
+    Get directory structure using 'tree' command.
+    
     Returns:
-        A string representation of the directory structure.
+        str: Directory tree as formatted string
     """
-    # Get the current tree structure as a string
     result = subprocess.run(["tree"], stdout=subprocess.PIPE)
     return result.stdout.decode("utf-8")
 
-
 def generate_diff(old_tree, new_tree):
     """
-    Generate a unified diff between two directory tree structures.
-
+    Generate unified diff between directory trees.
+    
     Args:
-        old_tree (str): The original directory tree structure.
-        new_tree (str): The new directory tree structure after changes.
-
+        old_tree: Original directory structure
+        new_tree: New directory structure
+        
     Returns:
-        str: A string containing the unified diff.
+        str: Unified diff output
     """
-    # Use difflib to print a diff of the two tree outputs
     diff = difflib.unified_diff(
         old_tree.splitlines(keepends=True),
         new_tree.splitlines(keepends=True),
@@ -82,44 +100,43 @@ def generate_diff(old_tree, new_tree):
     )
     return "".join(diff)
 
-
 def get_current_steps_dict(directory_items):
     """
-    Build a dictionary mapping step numbers to their respective paths.
-
+    Map step numbers to file paths.
+    
     Args:
-        directory_items (list): A list of items (files and directories) in the current directory.
-
+        directory_items: List of directory contents
+        
     Returns:
-        dict: A dictionary where keys are step numbers and values are the corresponding step paths.
+        dict: {step_number: file_path}
     """
     steps_dict = {}
     for item in directory_items:
         if item.startswith("step") and (os.path.isdir(item) or item.endswith(".md")):
-            # Extract the step number from the name
             try:
                 step_num = int(item.replace("step", "").replace(".md", ""))
                 steps_dict[step_num] = item
             except ValueError:
-                pass  # This handles cases where the step name is not a number
+                pass
     return steps_dict
-
 
 def get_user_input(steps_dict, step_title_input, step_number_input):
     """
-    Prompt the user for the new step's title and the desired step number, then validate the input.
-
+    Process and validate user input for new step.
+    
     Args:
-        steps_dict (dict): A dictionary mapping existing step numbers to their paths.
-        step_title_input (str): The title for the new step provided by the user.
-        step_number_input (str): The step number where the new step should be inserted, provided by the user.
-
+        steps_dict: Current step mapping
+        step_title_input: New step title
+        step_number_input: Desired step number
+        
     Returns:
-        tuple: A tuple containing the validated step title and step number.
+        tuple: (step_title, step_number)
+    
+    Raises:
+        ValueError: If step number invalid
     """
     step_title = step_title_input
     highest_step_num = max(steps_dict.keys(), default=0)
-
     while True:
         step_number = int(step_number_input)
         if 1 <= step_number <= highest_step_num + 1:
@@ -128,81 +145,52 @@ def get_user_input(steps_dict, step_title_input, step_number_input):
             raise ValueError(
                 f"Invalid step number: {step_number_input}. Please enter a valid step number between 1 and {highest_step_num+1}."
             )
-
     return step_title, step_number
-
 
 def plan_renaming(steps_dict, insert_step_num):
     """
-    Create a plan for renaming step directories and files after inserting a new step.
-
+    Plan step renaming operations.
+    
     Args:
-        steps_dict (dict): A dictionary mapping existing step numbers to their paths.
-        insert_step_num (int): The step number at which the new step will be inserted.
-
+        steps_dict: Current step mapping
+        insert_step_num: New step position
+        
     Returns:
-        list: A list of tuples representing the renaming operations required.
+        list: [(old_name, new_name), ...]
     """
-    # Sort the keys to ensure we rename in the correct order
     sorted_step_nums = sorted(steps_dict.keys())
     renaming_plan = []
-
-    # Determine which steps need to be shifted
     for step_num in sorted_step_nums:
         if step_num >= insert_step_num:
             renaming_plan.append((steps_dict[step_num], f"step{step_num + 1}"))
-
-    # Reverse the plan to avoid overwriting any steps
     renaming_plan.reverse()
     return renaming_plan
-
 
 #  TODO:(piotr1215) replace os calls with data structure
 def calculate_renaming_operations(renaming_plan):
     """
-    Calculate the file operations required to execute the renaming plan.
-
+    Generate file operations for renaming.
+    
     Args:
-        renaming_plan (list): A list representing the renaming operations required, where each item
-                              is a tuple of the form (old_name, new_name).
-
+        renaming_plan: List of rename operations
+        
     Returns:
-        list: A list of FileOperation objects to be performed for renaming.
+        list: FileOperation instances
     """
     file_operations = []
     for old_name, new_name in renaming_plan:
-        # Create the new directory if it doesn't exist
         file_operations.append(FileOperation("makedirs", new_name))
-
-        # If it's a directory, we need to check for and move necessary files
         if os.path.isdir(old_name):
-            # Paths for background and foreground scripts
-            old_background = os.path.join(old_name, "background.sh")
-            new_background = os.path.join(new_name, "background.sh")
-            old_foreground = os.path.join(old_name, "foreground.sh")
-            new_foreground = os.path.join(new_name, "foreground.sh")
-            old_verify = os.path.join(old_name, "verify.sh")
-            new_verify = os.path.join(new_name, "verify.sh")
-
-            # Check and move background.sh if it exists
-            if os.path.isfile(old_background):
-                file_operations.append(
-                    FileOperation("rename", old_background, content=new_background)
-                )
-
-            # Check and move foreground.sh if it exists
-            if os.path.isfile(old_foreground):
-                file_operations.append(
-                    FileOperation("rename", old_foreground, content=new_foreground)
-                )
-
-            # Check and move verify.sh if it exists
-            if os.path.isfile(old_verify):
-                file_operations.append(
-                    FileOperation("rename", old_verify, content=new_verify)
-                )
-
-            # Rename the step markdown file
+            # Handle step directory contents
+            for script in ["background.sh", "foreground.sh", "verify.sh"]:
+                old_script = os.path.join(old_name, script)
+                new_script = os.path.join(new_name, script)
+                if os.path.isfile(old_script):
+                    file_operations.append(
+                        FileOperation("rename", old_script, content=new_script)
+                    )
+            
+            # Handle step markdown file
             old_step_md = os.path.join(
                 old_name, f"step{old_name.replace('step', '')}.md"
             )
@@ -213,48 +201,39 @@ def calculate_renaming_operations(renaming_plan):
                 file_operations.append(
                     FileOperation("rename", old_step_md, content=new_step_md)
                 )
-
         else:
-            # If it's just a markdown file without a directory, prepare to rename it
+            # Handle standalone markdown file
             new_step_md = f"{new_name}.md"
             file_operations.append(
                 FileOperation("rename", old_name, content=new_step_md)
             )
-
     return file_operations
-
-
 
 def calculate_new_step_file_operations(
     insert_step_num: int, step_title: str, step_type: str
 ) -> List[FileOperation]:
     """
-    Calculate the file operations needed to add a new step to the scenario.
-
-    This function builds a list of file operations (as tuples) to create the necessary files
-    and directories for a new step in a structured and automated manner.
-
+    Generate operations for new step creation.
+    
     Args:
-        insert_step_num (int): The step number where the new step will be inserted.
-        step_title (str): The title for the new step.
-        step_type (str): The type of the step, either "regular" or "verify".
-
+        insert_step_num: Step number to insert
+        step_title: New step title
+        step_type: Step type ('r' or 'v')
+        
     Returns:
-        List[FileOperation]: A list of file operations that, when executed, will set up
-                             the new step's directory, markdown file, and script files.
+        List[FileOperation]: Creation operations
     """
     new_step_folder = f"step{insert_step_num}"
     new_step_md = f"{new_step_folder}/step{insert_step_num}.md"
-
     file_operations = [
         FileOperation("makedirs", new_step_folder),
         FileOperation("write_file", new_step_md, content=f"# {step_title}\n"),
     ]
-
+    
     if step_type == "r":
+        # Regular step with background/foreground scripts
         new_step_background = f"{new_step_folder}/background.sh"
         new_step_foreground = f"{new_step_folder}/foreground.sh"
-
         file_operations += [
             FileOperation(
                 "write_file",
@@ -269,10 +248,9 @@ def calculate_new_step_file_operations(
             FileOperation("chmod", new_step_background, mode=0o755),
             FileOperation("chmod", new_step_foreground, mode=0o755),
         ]
-
     elif step_type == "v":
+        # Verify step with verify script
         new_step_verify = f"{new_step_folder}/verify.sh"
-
         file_operations += [
             FileOperation(
                 "write_file",
@@ -281,85 +259,81 @@ def calculate_new_step_file_operations(
             ),
             FileOperation("chmod", new_step_verify, mode=0o755),
         ]
-
     return file_operations
-
 
 def calculate_index_json_updates(insert_step_num, step_title, current_index_data, step_type):
     """
-    Update the index.json structure after inserting a new step.
-
+    Update index.json for new step.
+    
     Args:
-        insert_step_num (int): The step number where the new step will be inserted.
-        step_title (str): The title for the new step.
-        current_index_data (dict): The current data from index.json.
-        step_type (str): The type of the step, either "verify" or "regular".
-
+        insert_step_num: Step number to insert
+        step_title: New step title
+        current_index_data: Current index.json content
+        step_type: Step type ('r' or 'v')
+        
     Returns:
-        dict: The updated index.json data reflecting the new step insertion.
+        dict: Updated index.json data
     """
-    # Load the index.json file
     data = current_index_data
-
-    # Create new step entry based on the step type
     new_step_data = {
         "title": step_title,
         "text": f"step{insert_step_num}/step{insert_step_num}.md",
     }
+    
     if step_type == "v":
         new_step_data["verify"] = f"step{insert_step_num}/verify.sh"
-    else:  # Default to "regular"
+    else:
         new_step_data["background"] = f"step{insert_step_num}/background.sh"
-
-    # Insert the new step data into the steps list
+        
     data["details"]["steps"].insert(insert_step_num - 1, new_step_data)
-
-    # Update the step numbers in the JSON structure
+    
+    # Update subsequent step numbers
     for i in range(insert_step_num, len(data["details"]["steps"])):
         step = data["details"]["steps"][i]
-        step_number = i + 1  # Convert to 1-based index
+        step_number = i + 1
         step["text"] = f"step{step_number}/step{step_number}.md"
         if "verify" in step:
             step["verify"] = f"step{step_number}/verify.sh"
         else:
             step["background"] = f"step{step_number}/background.sh"
-
-    # Write the updated data back to index.json
+            
     return data
 
-
 def display_help():
-    """
-    Display the help text for the CLI tool.
-
-    This function prints the usage and help information for the tool.
-    """
+    """Display CLI usage information."""
     help_text = """
         Usage: killercoda-cli [OPTIONS]
-
-        A CLI helper for writing KillerCoda scenarios and managing steps. This tool facilitates the addition, renaming, and renumbering of step files and directories in a structured and automated manner.
-
+        A CLI helper for writing KillerCoda scenarios and managing steps.
+        
         Options:
           -h, --help    Show this message and exit.
           -v, --version Display the version of the tool.
-
-        Basic Commands:
+          
+        Commands:
           Running 'killercoda-cli' starts the interactive process.
           init: Initialize a new project by creating an 'index.json' file.
           assets: Generate the predefined assets folder structure.
-
+          validate [--path PATH]: Validate courses in the specified path
+                                (defaults to current directory)
+                                
         Requirements:
-          - The tool must be run in a directory containing step files or directories (e.g., step1.md, step2/).
-          - An 'index.json' file must be present in the directory, which contains metadata about the steps.
-
+          - The tool must be run in a directory containing step files or directories
+          - An 'index.json' file must be present in the directory
+          
         Functionality:
-          - Renames and renumbers step files and directories based on user input.
-          - Updates the 'index.json' file to reflect changes in step order and titles.
+          - Renames and renumbers step files and directories based on user input
+          - Updates the 'index.json' file to reflect changes in step order and titles
+          - Validates course structure and configuration
     """
     print(help_text)
 
-
 def execute_file_operations(file_operations):
+    """
+    Execute file system operations.
+    
+    Args:
+        file_operations: List of FileOperation instances
+    """
     for operation in file_operations:
         if operation.operation == "makedirs":
             os.makedirs(operation.path, exist_ok=True)
@@ -372,6 +346,7 @@ def execute_file_operations(file_operations):
             os.rename(operation.path, operation.content)
 
 def generate_assets():
+    """Generate asset directory from template."""
     try:
         template_repo = 'https://github.com/Piotr1215/cookiecutter-killercoda-assets'
         output_dir = os.getcwd()
@@ -386,44 +361,182 @@ def generate_assets():
         print(f"An error occurred in generate_assets: {e}")
         raise
 
+def validate_course(course_path: str) -> tuple[bool, str]:
+    """
+    Validate course structure and content.
+    
+    Args:
+        course_path: Path to course directory
+        
+    Returns:
+        tuple[bool, str]: (is_valid, message)
+    """
+    try:
+        # Check index.json existence and content
+        index_path = os.path.join(course_path, "index.json")
+        if not os.path.exists(index_path):
+            return False, "Missing index.json file"
+            
+        with open(index_path) as f:
+            content = f.read().strip()
+            if not content:
+                return False, "Empty index.json file"
+                
+            try:
+                index_data = json.loads(content)
+            except json.JSONDecodeError:
+                return False, "Invalid JSON in index.json"
+                
+            if not index_data:
+                return False, "Empty JSON object in index.json"
+                
+        # Validate required fields
+        if not all(key in index_data and index_data[key] for key in ["title", "description", "details"]):
+            return False, "Missing required fields"
+            
+        if "steps" not in index_data["details"] or not index_data["details"]["steps"]:
+            return False, "Missing steps in index.json"
+            
+        # Validate each step
+        steps = index_data["details"]["steps"]
+        for i, step in enumerate(steps, 1):
+            if not all(key in step and step[key] for key in ["title", "text"]):
+                return False, f"Step {i} missing required fields"
+                
+            step_file = os.path.join(course_path, step["text"])
+            if not os.path.exists(step_file):
+                return False, f"Missing step file: {step['text']}"
+                
+            if "verify" in step:
+                verify_file = os.path.join(course_path, step["verify"])
+                if not os.path.exists(verify_file):
+                    return False, f"Missing verify script: {step['verify']}"
+            if "background" in step:
+                background_file = os.path.join(course_path, step["background"])
+                if not os.path.exists(background_file):
+                    return False, f"Missing background script: {step['background']}"
+                    
+        return True, "Valid"
+        
+    except Exception as e:
+        return False, f"Validation error: {str(e)}"
+
+def validate_all(base_path: str) -> bool:
+    """
+    Validate killercoda scenario structure:
+    - index.json exists and is valid JSON
+    - Referenced step files exist
+    """
+    def print_status(check: str, status: bool, message: str = ""):
+        symbol = "[+]" if status else "[-]"
+        result = "ok" if status else "failed"
+        if message:
+            print(f"{symbol}{check:<50} {result} - {message}")
+        else:
+            print(f"{symbol}{check:<50} {result}")
+
+    print("\n=== Scenario Validation ===")
+
+    # Empty directory without index.json is valid
+    if not os.path.exists(os.path.join(base_path, "index.json")):
+        if not os.listdir(base_path):
+            print_status("empty-directory", True)
+            print(f"\nValidation Status: PASSED")
+            print(f"Location: {os.path.abspath(base_path)}")
+            return True
+        print_status("index.json", False, "File not found")
+        return False
+
+    all_valid = True
+    index_path = os.path.join(base_path, "index.json")
+
+    try:
+        with open(index_path) as f:
+            content = f.read().strip()
+            if not content:
+                print_status("index.json", False, "Empty file")
+                return False
+                
+            try:
+                index_data = json.loads(content)
+                print_status("json-syntax", True)
+            except json.JSONDecodeError:
+                print_status("json-syntax", False, "Invalid JSON")
+                return False
+
+            if "details" not in index_data or "steps" not in index_data["details"]:
+                print_status("steps-structure", False, "Missing steps array")
+                return False
+
+            for i, step in enumerate(index_data["details"]["steps"], 1):
+                if "text" not in step:
+                    print_status(f"step-{i}", False, "Missing text field")
+                    all_valid = False
+                    continue
+
+                file_path = os.path.join(base_path, step["text"])
+                exists = os.path.exists(file_path)
+                print_status(f"step-{i}", exists, "" if exists else f"Missing {step['text']}")
+                all_valid = all_valid and exists
+
+    except Exception as e:
+        print_status("validation", False, str(e))
+        return False
+
+    print(f"\nValidation Status: {'PASSED' if all_valid else 'FAILED'}")
+    print(f"Location: {os.path.abspath(base_path)}")
+    return all_valid
 
 def main():
     """
-    This function orchestrates the entire process of adding a new step to the scenario,
-    from taking user input to updating the file system and the index.json file.
-    It ensures that the 'index.json' file is present, gathers the current directory structure,
-    prompts the user for the new step's title and number, calculates the necessary file operations,
-    and applies those changes to the file system and the index.json file.
-    Finally, it outputs the changes to the directory structure for the user to review.
+    Main CLI entry point.
+    Handles command processing and orchestrates operations:
+    - Step addition/management
+    - Project initialization
+    - Asset generation
+    - Scenario validation
     """
     try:
-        if len(sys.argv) > 1 and sys.argv[1] in ["-h", "--help"]:
-            display_help()
-            return
-        if len(sys.argv) > 1 and sys.argv[1] in ["-v", "--version"]:
-            print(f"killercoda-cli v{__version__}")
-            return
-        if len(sys.argv) > 1 and sys.argv[1] in ["init"]:
-            init_project()
-            return
-        if len(sys.argv) > 1 and sys.argv[1] in ["assets"]:
-            generate_assets()
-            return
+        if len(sys.argv) > 1:
+            if sys.argv[1] in ["-h", "--help"]:
+                display_help()
+                return
+            elif sys.argv[1] in ["-v", "--version"]:
+                print(f"killercoda-cli v{__version__}")
+                return
+            elif sys.argv[1] == "init":
+                init_project()
+                return
+            elif sys.argv[1] == "assets":
+                generate_assets()
+                return
+            elif sys.argv[1] == "validate":
+                # Get path argument or use current directory
+                path = sys.argv[3] if len(sys.argv) > 3 and sys.argv[2] == "--path" else "."
+                success = validate_all(path)
+                sys.exit(0 if success else 1)
+                return
         
+        # Interactive mode for step management
         old_tree_structure = get_tree_structure()
         directory_items = os.listdir(".")
         steps_dict = get_current_steps_dict(directory_items)
+        
         if "index.json" not in directory_items:
             print(
                 "The 'index.json' file is missing. Please ensure it is present in the current directory."
             )
             return
+            
+        # Get user input for new step
         step_title_input = input("Enter the title for the new step: ")
         highest_step_num = max(steps_dict.keys(), default=0)
         step_number_input = input(
             f"Enter the step number to insert the new step at (1-{highest_step_num+1}): "
         )
         step_type = input("Enter the type of step (r for regular or v for verify): ")
+        
+        # Process step addition
         step_title, insert_step_num = get_user_input(
             steps_dict, step_title_input, step_number_input
         )
@@ -432,24 +545,31 @@ def main():
         new_step_operations = calculate_new_step_file_operations(
             insert_step_num, step_title, step_type
         )
+        
+        # Update index.json
         index_file_path = "index.json"
         with open(index_file_path, "r") as index_file:
             current_index_data = json.load(index_file)
+            
         updated_index_data = calculate_index_json_updates(
             insert_step_num, step_title, current_index_data, step_type
         )
+        
+        # Execute file operations
         execute_file_operations(renaming_operations + new_step_operations)
         with open(index_file_path, "w") as index_file:
             json.dump(updated_index_data, index_file, ensure_ascii=False, indent=4)
+            
+        # Show changes
         new_tree_structure = get_tree_structure()
         tree_diff = generate_diff(old_tree_structure, new_tree_structure)
         print("\nFile structure changes:")
         print(tree_diff, end="")
+        
     except Exception as e:
         import traceback
         print(f"An error occurred: {e}")
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()
