@@ -59,14 +59,12 @@ jobs:
         run: hatch run test:coverage-report
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
+        uses: codecov/codecov-action@v5
         with:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
-        env:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: Piotr1215/killercoda-cli
+          fail_ci_if_error: false
 
   build:
     runs-on: ubuntu-22.04
