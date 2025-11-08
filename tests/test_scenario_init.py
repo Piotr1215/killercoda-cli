@@ -1,7 +1,9 @@
 import unittest
 from unittest import mock
 from unittest.mock import patch
+
 from killercoda_cli import scenario_init
+
 
 class TestScenarioInit(unittest.TestCase):
 
@@ -18,7 +20,7 @@ class TestScenarioInit(unittest.TestCase):
             {'choice': 'kubernetes-kubeadm-1node'},
             {'confirm': True}
         ]
-        
+
         scenario_init.init_project()
 
         expected_data = {
@@ -63,7 +65,7 @@ class TestScenarioInit(unittest.TestCase):
             {'choice': 'kubernetes-kubeadm-1node'},
             {'confirm': True}
         ]
-        
+
         scenario_init.init_project()
         mock_open.assert_any_call("finish.md", "w")
         mock_open().write.assert_any_call("# Finish\n")
@@ -80,7 +82,7 @@ class TestScenarioInit(unittest.TestCase):
             {'choice': 'kubernetes-kubeadm-1node'},
             {'confirm': True}
         ]
-        
+
         scenario_init.init_project()
         mock_open.assert_any_call("intro.md", "w")
         mock_open().write.assert_any_call("# Introduction\n")
@@ -98,7 +100,7 @@ class TestScenarioInit(unittest.TestCase):
             {'choice': 'kubernetes-kubeadm-1node'},
             {'confirm': True}
         ]
-        
+
         scenario_init.init_project()
         mock_open.assert_any_call("intro.md", "w")
         mock_open().write.assert_any_call("# Introduction\n")

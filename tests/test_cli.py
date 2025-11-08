@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import unittest
-from unittest import TestCase, mock
-from unittest.mock import patch, MagicMock
-from killercoda_cli.cli import FileOperation
+from unittest import mock
+from unittest.mock import patch
+
 from killercoda_cli import cli
+from killercoda_cli.file_operations import FileOperation
 
 
 class TestCLI(unittest.TestCase):
@@ -19,6 +20,7 @@ class TestCLI(unittest.TestCase):
         """
         with patch("subprocess.run") as mock_run:
             mock_run.return_value.stdout = mock_output.encode("utf-8")
+            mock_run.return_value.returncode = 0
             tree_structure = cli.get_tree_structure()
             expected_output = mock_output
             assert (
@@ -84,17 +86,12 @@ class TestCLI(unittest.TestCase):
             FileOperation("rename", "step1/verify.sh", "step2/verify.sh"),
             FileOperation("rename", "step1/step1.md", "step2/step2.md"),
         ]
-        
+
         # Mock os.path.isdir and os.path.isfile
         with patch("os.path.isdir", return_value=True), patch("os.path.isfile") as mock_isfile:
             # Mock os.path.isfile to return True for specific files
             def isfile_side_effect(path):
-                if path in [
-                    "step2/background.sh", "step2/foreground.sh", "step2/step2.md", "step2/verify.sh",
-                    "step1/background.sh", "step1/foreground.sh", "step1/step1.md", "step1/verify.sh"
-                ]:
-                    return True
-                return False
+                return path in ["step2/background.sh", "step2/foreground.sh", "step2/step2.md", "step2/verify.sh", "step1/background.sh", "step1/foreground.sh", "step1/step1.md", "step1/verify.sh"]
             mock_isfile.side_effect = isfile_side_effect
 
             operations = cli.calculate_renaming_operations(renaming_plan)
@@ -111,17 +108,12 @@ class TestCLI(unittest.TestCase):
             FileOperation("rename", "step1/foreground.sh", "step2/foreground.sh"),
             FileOperation("rename", "step1/step1.md", "step2/step2.md"),
         ]
-        
+
         # Mock os.path.isdir and os.path.isfile
         with patch("os.path.isdir", return_value=True), patch("os.path.isfile") as mock_isfile:
             # Mock os.path.isfile to return True for specific files
             def isfile_side_effect(path):
-                if path in [
-                    "step2/background.sh", "step2/foreground.sh", "step2/step2.md",
-                    "step1/background.sh", "step1/foreground.sh", "step1/step1.md"
-                ]:
-                    return True
-                return False
+                return path in ["step2/background.sh", "step2/foreground.sh", "step2/step2.md", "step1/background.sh", "step1/foreground.sh", "step1/step1.md"]
             mock_isfile.side_effect = isfile_side_effect
 
             operations = cli.calculate_renaming_operations(renaming_plan)

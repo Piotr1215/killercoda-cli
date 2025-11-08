@@ -7,6 +7,7 @@ Provides functionality for creating new Killercoda scenarios with interactive pr
 
 import json
 import os
+
 import inquirer
 
 # Available Killercoda backend environments
@@ -98,7 +99,7 @@ def init_project():
     if os.path.exists("index.json"):
         print("The 'index.json' file already exists. Please edit the existing file.")
         return
-    
+
     schema = {
         "title": "string",
         "description": "string",
@@ -120,7 +121,7 @@ def init_project():
     }
 
     populated_data = populate_schema(schema)
-    
+
     # Set static values for intro and finish
     populated_data["details"]["intro"] = {"text": "intro.md"}
     populated_data["details"]["finish"] = {"text": "finish.md"}
@@ -130,7 +131,7 @@ def init_project():
 
     with open("index.json", "w") as index_file:
         json.dump(populated_data, index_file, ensure_ascii=False, indent=4)
-    
+
     # Create intro.md and finish.md if they don't exist
     if not os.path.exists("intro.md"):
         with open("intro.md", "w") as intro_file:

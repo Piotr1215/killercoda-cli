@@ -6,18 +6,18 @@ Provides functionality for managing scenario steps, including renaming, addition
 """
 
 import os
-import json
-from typing import List, Dict, Tuple, Any
+from typing import List
+
 from killercoda_cli.file_operations import FileOperation
 
 
 def get_current_steps_dict(directory_items):
     """
     Map step numbers to file paths.
-    
+
     Args:
         directory_items: List of directory contents
-        
+
     Returns:
         dict: {step_number: file_path}
     """
@@ -35,15 +35,15 @@ def get_current_steps_dict(directory_items):
 def get_user_input(steps_dict, step_title_input, step_number_input):
     """
     Process and validate user input for new step.
-    
+
     Args:
         steps_dict: Current step mapping
         step_title_input: New step title
         step_number_input: Desired step number
-        
+
     Returns:
         tuple: (step_title, step_number)
-    
+
     Raises:
         ValueError: If step number invalid
     """
@@ -63,11 +63,11 @@ def get_user_input(steps_dict, step_title_input, step_number_input):
 def plan_renaming(steps_dict, insert_step_num):
     """
     Plan step renaming operations.
-    
+
     Args:
         steps_dict: Current step mapping
         insert_step_num: New step position
-        
+
     Returns:
         list: [(old_name, new_name), ...]
     """
@@ -84,10 +84,10 @@ def plan_renaming(steps_dict, insert_step_num):
 def calculate_renaming_operations(renaming_plan):
     """
     Generate file operations for renaming.
-    
+
     Args:
         renaming_plan: List of rename operations
-        
+
     Returns:
         list: FileOperation instances
     """
@@ -103,7 +103,7 @@ def calculate_renaming_operations(renaming_plan):
                     file_operations.append(
                         FileOperation("rename", old_script, content=new_script)
                     )
-            
+
             # Handle step markdown file
             old_step_md = os.path.join(
                 old_name, f"step{old_name.replace('step', '')}.md"
@@ -129,12 +129,12 @@ def calculate_new_step_file_operations(
 ) -> List[FileOperation]:
     """
     Generate operations for new step creation.
-    
+
     Args:
         insert_step_num: Step number to insert
         step_title: New step title
         step_type: Step type ('r' or 'v')
-        
+
     Returns:
         List[FileOperation]: Creation operations
     """
@@ -144,7 +144,7 @@ def calculate_new_step_file_operations(
         FileOperation("makedirs", new_step_folder),
         FileOperation("write_file", new_step_md, content=f"# {step_title}\n"),
     ]
-    
+
     if step_type == "r":
         # Regular step with background/foreground scripts
         new_step_background = f"{new_step_folder}/background.sh"
@@ -180,13 +180,13 @@ def calculate_new_step_file_operations(
 def calculate_index_json_updates(insert_step_num, step_title, current_index_data, step_type):
     """
     Update index.json for new step.
-    
+
     Args:
         insert_step_num: Step number to insert
         step_title: New step title
         current_index_data: Current index.json content
         step_type: Step type ('r' or 'v')
-        
+
     Returns:
         dict: Updated index.json data
     """
@@ -195,14 +195,14 @@ def calculate_index_json_updates(insert_step_num, step_title, current_index_data
         "title": step_title,
         "text": f"step{insert_step_num}/step{insert_step_num}.md",
     }
-    
+
     if step_type == "v":
         new_step_data["verify"] = f"step{insert_step_num}/verify.sh"
     else:
         new_step_data["background"] = f"step{insert_step_num}/background.sh"
-        
+
     data["details"]["steps"].insert(insert_step_num - 1, new_step_data)
-    
+
     # Update subsequent step numbers
     for i in range(insert_step_num, len(data["details"]["steps"])):
         step = data["details"]["steps"][i]
@@ -212,5 +212,5 @@ def calculate_index_json_updates(insert_step_num, step_title, current_index_data
             step["verify"] = f"step{step_number}/verify.sh"
         else:
             step["background"] = f"step{step_number}/background.sh"
-            
+
     return data
