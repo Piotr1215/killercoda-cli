@@ -1,12 +1,13 @@
-import unittest
 import json
-from unittest.mock import patch
-from io import StringIO
 import os
 import shutil
+import unittest
+from io import StringIO
+from unittest.mock import patch
 
 # Assuming cli.py is structured as a module you can import from
 from killercoda_cli import cli
+
 
 class TestCLIIntegration(unittest.TestCase):
     def setUp(self):
@@ -25,7 +26,7 @@ class TestCLIIntegration(unittest.TestCase):
         test_generate_dir = '/tmp/test_generate_assets'
         os.makedirs(test_generate_dir, exist_ok=True)
         os.chdir(test_generate_dir)
-        
+
         # Run the generate_assets function
         cli.generate_assets()
 
@@ -34,7 +35,7 @@ class TestCLIIntegration(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(test_generate_dir, 'assets', 'deploy.sh')))
         self.assertTrue(os.path.exists(os.path.join(test_generate_dir, 'background.sh')))
         self.assertTrue(os.path.exists(os.path.join(test_generate_dir, 'foreground.sh')))
-        
+
         # Clean up the test directory
         shutil.rmtree(test_generate_dir)
 
@@ -53,10 +54,10 @@ class TestCLIIntegration(unittest.TestCase):
         os.chdir(self.test_dir)
 
 
-        
+
         # Call the main function directly
         cli.main()
-        
+
         # Check if the CLI tool ran successfully by inspecting stdout or other side effects
         # Adjusted the expected output to match the actual CLI behavior
         self.assertIn("An error occurred:", mock_stdout.getvalue())

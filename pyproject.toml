@@ -1,8 +1,5 @@
 [build-system]
-requires = [
-    "hatchling<1.18.0",
-    "pathspec==0.9.0"
-]
+requires = ["hatchling>=1.25.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -13,29 +10,39 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
 dependencies = [
-    "inquirer",
-    "cookiecutter",
+    "inquirer>=3.1.0",
+    "cookiecutter>=2.6.0",
 ]
-keywords = []
+keywords = ["killercoda", "cli", "scenarios", "interactive-tutorials", "education"]
 authors = [
   { name = "Piotr Zaniewski", email = "piotrzan@gmail.com" },
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Education",
+  "Topic :: Software Development :: Documentation",
+  "Topic :: Utilities",
   "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
 [project.urls]
-Documentation = "https://github.com/unknown/killercoda-cli#readme"
-Issues = "https://github.com/unknown/killercoda-cli/issues"
-Source = "https://github.com/unknown/killercoda-cli"
+Documentation = "https://github.com/Piotr1215/killercoda-cli#readme"
+Issues = "https://github.com/Piotr1215/killercoda-cli/issues"
+Source = "https://github.com/Piotr1215/killercoda-cli"
+Changelog = "https://github.com/Piotr1215/killercoda-cli/releases"
 
 [project.scripts]
 killercoda-cli = "killercoda_cli.cli:main"
@@ -46,14 +53,17 @@ validate-bump = false
 
 [tool.hatch.envs.default]
 dependencies = [
-  "coverage[toml]>=6.5",
-  "pytest",
+  "coverage[toml]>=7.6.0",
+  "pytest>=8.3.0",
 ]
 
 [tool.hatch.envs.test]
 type = "virtual"
 path = ".venv-test"
-dependencies = ["coverage", "pytest"]
+dependencies = [
+  "coverage[toml]>=7.6.0",
+  "pytest>=8.3.0",
+]
 
 [tool.hatch.envs.test.scripts]
 unit = "coverage run --source=killercoda_cli -m unittest discover -v tests"
@@ -62,7 +72,7 @@ coverage-report = "coverage xml"
 [tool.hatch.envs.docs]
 type = "virtual"
 path = ".venv-docs"
-dependencies = ["pdoc"]  
+dependencies = ["pdoc>=14.7.0"]  
 
 [tool.hatch.envs.docs.scripts]
 generate = "pdoc -m google killercoda_cli -o docs"
@@ -80,11 +90,25 @@ cov = [
 ]
 
 [[tool.hatch.envs.all.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+
+[tool.hatch.envs.lint]
+detached = true
+dependencies = [
+  "ruff>=0.8.0",
+]
+[tool.hatch.envs.lint.scripts]
+check = "ruff check {args:killercoda_cli tests}"
+format = "ruff format {args:killercoda_cli tests}"
+format-check = "ruff format --check {args:killercoda_cli tests}"
+all = [
+  "format",
+  "check",
+]
 
 [tool.hatch.envs.types]
 dependencies = [
-  "mypy>=1.0.0",
+  "mypy>=1.13.0",
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:killercoda_cli tests}"
@@ -107,3 +131,35 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
 ]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "UP",  # pyupgrade
+  "ARG", # flake8-unused-arguments
+  "SIM", # flake8-simplify
+]
+ignore = [
+  "E501",  # line too long, handled by formatter
+  "B008",  # do not perform function calls in argument defaults
+  "B904",  # raise from
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # unused imports
+"tests/**/*.py" = ["ARG"]  # unused arguments in tests
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

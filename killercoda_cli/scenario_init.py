@@ -1,7 +1,16 @@
+#!/usr/bin/env python3
+
+"""
+Scenario initialization module for killercoda-cli.
+Provides functionality for creating new Killercoda scenarios with interactive prompts.
+"""
+
 import json
 import os
+
 import inquirer
 
+# Available Killercoda backend environments
 backends = {
     "kubernetes-kubeadm-1node": "Kubernetes kubeadm 1 node",
     "kubernetes-kubeadm-2nodes": "Kubernetes kubeadm 2 nodes",
@@ -14,6 +23,17 @@ time_choices = [f"{i} minutes" for i in range(15, 50, 5)]
 difficulty_choices = ["beginner", "intermediate", "advanced"]
 
 def get_value(prompt, value_type, choices=None):
+    """
+    Prompt user for input based on value type.
+
+    Args:
+        prompt: Question to display to user
+        value_type: Expected value type ('boolean', 'string', etc.)
+        choices: Optional list of choices for selection
+
+    Returns:
+        User's input value
+    """
     if choices:
         question = [inquirer.List('choice', message=prompt, choices=choices)]
         answer = inquirer.prompt(question)
@@ -29,6 +49,16 @@ def get_value(prompt, value_type, choices=None):
             return answer['value']
 
 def populate_schema(schema, parent_key=""):
+    """
+    Recursively populate schema with user input.
+
+    Args:
+        schema: Schema definition dictionary
+        parent_key: Parent key for nested values
+
+    Returns:
+        dict: Populated schema with user values
+    """
     result = {}
     for key, value_type in schema.items():
         full_key = f"{parent_key}.{key}" if parent_key else key
@@ -57,11 +87,19 @@ def populate_schema(schema, parent_key=""):
     return result
 
 def init_project():
-    """initialize a new project by creating index.json file"""
+    """
+    Initialize a new Killercoda project.
+
+    Creates an index.json file with scenario configuration through
+    interactive prompts. Also creates intro.md and finish.md files.
+
+    Raises:
+        SystemExit: If index.json already exists
+    """
     if os.path.exists("index.json"):
         print("The 'index.json' file already exists. Please edit the existing file.")
         return
-    
+
     schema = {
         "title": "string",
         "description": "string",
@@ -83,7 +121,7 @@ def init_project():
     }
 
     populated_data = populate_schema(schema)
-    
+
     # Set static values for intro and finish
     populated_data["details"]["intro"] = {"text": "intro.md"}
     populated_data["details"]["finish"] = {"text": "finish.md"}
@@ -93,7 +131,7 @@ def init_project():
 
     with open("index.json", "w") as index_file:
         json.dump(populated_data, index_file, ensure_ascii=False, indent=4)
-    
+
     # Create intro.md and finish.md if they don't exist
     if not os.path.exists("intro.md"):
         with open("intro.md", "w") as intro_file:

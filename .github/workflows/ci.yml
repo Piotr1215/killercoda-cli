@@ -21,11 +21,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PYTHON_VERSION: '3.11.5'
+  PYTHON_VERSION: '3.12'
 
 jobs:
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,10 +36,16 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Hatch
-        run: pipx install hatch==1.14.0
+        run: pipx install hatch
+
+      - name: Run Ruff Linter
+        run: hatch run lint:check
+
+      - name: Check Formatting
+        run: hatch run lint:format-check
 
   unit-test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,7 +56,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Hatch
-        run: pipx install hatch==1.14.0
+        run: pipx install hatch
 
       - name: Run Unit Tests
         run: hatch run test:unit
@@ -67,7 +73,7 @@ jobs:
           fail_ci_if_error: false
 
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,7 +84,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Hatch
-        run: pipx install hatch==1.14.0
+        run: pipx install hatch
 
       - name: Get PyPI Project Version
         run: |
@@ -100,7 +106,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs:
       - build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -114,7 +120,7 @@ jobs:
           path: "dist"
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.13.0
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
@@ -151,7 +157,7 @@ jobs:
 
   docs:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -162,7 +168,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Hatch
-        run: pipx install hatch==1.14.0
+        run: pipx install hatch
 
       - name: Build Documentation
         run: hatch run docs:pdoc killercoda_cli -o docs

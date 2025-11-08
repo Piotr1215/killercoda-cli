@@ -173,4 +173,25 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+# Hatch
+.venv-*/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# AI assistants
 .aider*
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
