@@ -53,14 +53,17 @@ validate-bump = false
 
 [tool.hatch.envs.default]
 dependencies = [
-  "coverage[toml]>=6.5",
-  "pytest",
+  "coverage[toml]>=7.6.0",
+  "pytest>=8.3.0",
 ]
 
 [tool.hatch.envs.test]
 type = "virtual"
 path = ".venv-test"
-dependencies = ["coverage", "pytest"]
+dependencies = [
+  "coverage[toml]>=7.6.0",
+  "pytest>=8.3.0",
+]
 
 [tool.hatch.envs.test.scripts]
 unit = "coverage run --source=killercoda_cli -m unittest discover -v tests"
@@ -69,7 +72,7 @@ coverage-report = "coverage xml"
 [tool.hatch.envs.docs]
 type = "virtual"
 path = ".venv-docs"
-dependencies = ["pdoc"]  
+dependencies = ["pdoc>=14.7.0"]  
 
 [tool.hatch.envs.docs.scripts]
 generate = "pdoc -m google killercoda_cli -o docs"
@@ -91,7 +94,7 @@ python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
 
 [tool.hatch.envs.types]
 dependencies = [
-  "mypy>=1.0.0",
+  "mypy>=1.13.0",
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:killercoda_cli tests}"
