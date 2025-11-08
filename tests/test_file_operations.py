@@ -55,49 +55,64 @@ class TestFileOperations(unittest.TestCase):
     def test_execute_file_operations_makedirs(self):
         """Test execute_file_operations with makedirs operation"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir = os.path.join(tmpdir, "test_dir")
-            operations = [FileOperation("makedirs", test_dir)]
+            original_dir = os.getcwd()
+            try:
+                os.chdir(tmpdir)  # Use relative paths from temp directory
+                operations = [FileOperation("makedirs", "test_dir")]
 
-            execute_file_operations(operations)
-            self.assertTrue(os.path.isdir(test_dir))
+                execute_file_operations(operations)
+                self.assertTrue(os.path.isdir("test_dir"))
+            finally:
+                os.chdir(original_dir)
 
     def test_execute_file_operations_write_file(self):
         """Test execute_file_operations with write_file operation"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            test_file = os.path.join(tmpdir, "test_file.txt")
-            test_content = "test content"
-            operations = [FileOperation("write_file", test_file, content=test_content)]
+            original_dir = os.getcwd()
+            try:
+                os.chdir(tmpdir)  # Use relative paths from temp directory
+                test_content = "test content"
+                operations = [FileOperation("write_file", "test_file.txt", content=test_content)]
 
-            execute_file_operations(operations)
-            with open(test_file) as f:
-                self.assertEqual(f.read(), test_content)
+                execute_file_operations(operations)
+                with open("test_file.txt") as f:
+                    self.assertEqual(f.read(), test_content)
+            finally:
+                os.chdir(original_dir)
 
     def test_execute_file_operations_chmod(self):
         """Test execute_file_operations with chmod operation"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            test_file = os.path.join(tmpdir, "test_script.sh")
-            with open(test_file, 'w') as f:
-                f.write("#!/bin/sh\necho test")
+            original_dir = os.getcwd()
+            try:
+                os.chdir(tmpdir)  # Use relative paths from temp directory
+                with open("test_script.sh", 'w') as f:
+                    f.write("#!/bin/sh\necho test")
 
-            operations = [FileOperation("chmod", test_file, mode=0o755)]
-            execute_file_operations(operations)
+                operations = [FileOperation("chmod", "test_script.sh", mode=0o755)]
+                execute_file_operations(operations)
 
-            # Check file permissions (this is platform-dependent)
-            self.assertTrue(os.access(test_file, os.X_OK))
+                # Check file permissions (this is platform-dependent)
+                self.assertTrue(os.access("test_script.sh", os.X_OK))
+            finally:
+                os.chdir(original_dir)
 
     def test_execute_file_operations_rename(self):
         """Test execute_file_operations with rename operation"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            source_file = os.path.join(tmpdir, "source.txt")
-            target_file = os.path.join(tmpdir, "target.txt")
-            with open(source_file, 'w') as f:
-                f.write("test content")
+            original_dir = os.getcwd()
+            try:
+                os.chdir(tmpdir)  # Use relative paths from temp directory
+                with open("source.txt", 'w') as f:
+                    f.write("test content")
 
-            operations = [FileOperation("rename", source_file, content=target_file)]
-            execute_file_operations(operations)
+                operations = [FileOperation("rename", "source.txt", content="target.txt")]
+                execute_file_operations(operations)
 
-            self.assertFalse(os.path.exists(source_file))
-            self.assertTrue(os.path.exists(target_file))
+                self.assertFalse(os.path.exists("source.txt"))
+                self.assertTrue(os.path.exists("target.txt"))
+            finally:
+                os.chdir(original_dir)
 
 if __name__ == "__main__":
     unittest.main()
