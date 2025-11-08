@@ -10,7 +10,16 @@ from cookiecutter.main import cookiecutter
 
 
 def generate_assets():
-    """Generate asset directory from template."""
+    """
+    Generate scenario assets from cookiecutter template.
+
+    Downloads and instantiates the killercoda-assets cookiecutter template
+    in the current working directory. The template provides predefined
+    folder structures and files for interactive scenarios.
+
+    Raises:
+        Exception: If template generation fails
+    """
     try:
         template_repo = 'https://github.com/Piotr1215/cookiecutter-killercoda-assets'
         output_dir = os.getcwd()
