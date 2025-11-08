@@ -33,9 +33,10 @@ classifiers = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/unknown/killercoda-cli#readme"
-Issues = "https://github.com/unknown/killercoda-cli/issues"
-Source = "https://github.com/unknown/killercoda-cli"
+Documentation = "https://github.com/Piotr1215/killercoda-cli#readme"
+Issues = "https://github.com/Piotr1215/killercoda-cli/issues"
+Source = "https://github.com/Piotr1215/killercoda-cli"
+Changelog = "https://github.com/Piotr1215/killercoda-cli/releases"
 
 [project.scripts]
 killercoda-cli = "killercoda_cli.cli:main"
