@@ -199,12 +199,30 @@ This project uses [Hatch](https://hatch.pypa.io/) for development workflow manag
 ### Running Tests
 
 ```bash
-# Run unit tests
+# Run unit tests (includes property-based and security tests)
 hatch run test:unit
 
 # Generate coverage report
 hatch run test:coverage-report
+
+# Run mutation testing to verify test quality
+hatch run test:mutate
+
+# View mutation testing results
+hatch run test:mutate-results
+
+# Show detailed mutation survivors
+hatch run test:mutate-show
+
+# Generate HTML mutation report
+hatch run test:mutate-html
 ```
+
+**Test Quality Features:**
+- **Security Tests**: Path traversal, null byte injection, symlink attacks
+- **Property-based Tests**: Using Hypothesis to verify invariants across many inputs
+- **Mutation Testing**: Verify tests catch real bugs with mutmut
+- **85%+ Code Coverage**: Comprehensive test coverage with detailed reports
 
 ### Code Quality
 
